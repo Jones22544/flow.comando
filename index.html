@@ -1,0 +1,2990 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Team</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0E14; --card: #151923; --card-hover: #1C212C; --field: #1C212C;
+    --text: #F2F3F5; --hint: #7D8390;
+    --gold: #E3B341; --gold-dim: rgba(227,179,65,0.14);
+    --violet: #8C7CF0; --violet-dim: rgba(140,124,240,0.14);
+    --neutral-dim: rgba(255,255,255,0.06);
+    --green: #4ADE80; --green-dim: rgba(74,222,128,0.14);
+    --red: #E4574C; --red-dim: rgba(228,87,76,0.14);
+    --amber: #F2A623; --amber-dim: rgba(242,166,35,0.14);
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:16px 16px 28px; }
+
+  /* ---- шапка подэкранов ---- */
+  .subheader { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .back-btn { width:32px; height:32px; border-radius:10px; background:var(--card); border:none; color:var(--text); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .subtitle { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:18px; }
+
+  .screen { display:none; }
+  .screen.active { display:block; }
+
+  /* ---- главный экран ---- */
+  .brand-header { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .brand-wordmark { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:13px; letter-spacing:0.12em; color:var(--text); }
+
+  .balance-card { position:relative; background:var(--card); border-radius:18px; padding:20px; margin-bottom:22px; overflow:hidden; }
+  .balance-card::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--gold),var(--violet)); }
+  .balance-top { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .avatar-ring { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(var(--gold) 0% 0%, rgba(255,255,255,0.08) 0% 100%); flex-shrink:0; transition:box-shadow .3s; }
+  .avatar-inner { width:44px; height:44px; border-radius:50%; background:var(--card); display:flex; align-items:center; justify-content:center; font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:16px; color:var(--gold); }
+
+  /* ---- рамки аватара, разблокируемые уровнем (статус) ---- */
+  .avatar-ring.frame-glow { box-shadow:0 0 14px 1px rgba(227,179,65,0.5); }
+  .avatar-ring.frame-legendary {
+    box-shadow:0 0 18px 3px rgba(140,124,240,0.55), 0 0 30px 6px rgba(227,179,65,0.25);
+    animation:legendary-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes legendary-pulse {
+    0%, 100% { box-shadow:0 0 14px 2px rgba(140,124,240,0.5), 0 0 26px 4px rgba(227,179,65,0.2); }
+    50% { box-shadow:0 0 22px 5px rgba(140,124,240,0.75), 0 0 36px 8px rgba(227,179,65,0.4); }
+  }
+  .user-name { font-size:15px; font-weight:600; }
+  .user-level { font-size:12.5px; color:var(--hint); margin-top:2px; }
+  .balance-label { font-size:12.5px; color:var(--hint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .balance-amount { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:30px; letter-spacing:-0.01em; }
+
+  .section-label { font-size:12px; font-weight:600; color:var(--hint); text-transform:uppercase; letter-spacing:.06em; margin:18px 4px 8px; }
+  .section-label:first-of-type { margin-top:0; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .item {
+    display:flex; align-items:center; gap:11px; background:var(--card);
+    border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:14px 15px;
+    color:var(--text); font-size:14.5px; font-weight:500; text-align:left; cursor:pointer;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease;
+    -webkit-tap-highlight-color:transparent; width:100%;
+    box-shadow:0 1px 2px rgba(0,0,0,0.12);
+  }
+  .item:active { transform:scale(0.97); background:var(--card-hover); border-color:rgba(255,255,255,0.1); }
+  .item.wide { grid-column:1/-1; justify-content:space-between; }
+  .icon-chip { width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon-chip.gold { background:var(--gold-dim); color:var(--gold); }
+  .icon-chip.violet { background:var(--violet-dim); color:var(--violet); }
+  .icon-chip.neutral { background:var(--neutral-dim); color:var(--hint); }
+  .icon-chip.amber { background:var(--amber-dim); color:var(--amber); }
+  .icon-chip svg { width:18px; height:18px; }
+  .item .label { flex:1; }
+  .item .arrow { color:var(--hint); font-size:14px; }
+
+  .primary-cta {
+    display:flex; align-items:center; justify-content:center; gap:9px; width:100%;
+    background:linear-gradient(135deg, var(--gold), #F0CB6E); color:#21150A;
+    border:none; border-radius:16px; padding:16px; font-size:15.5px; font-weight:700;
+    cursor:pointer; margin-bottom:18px; box-shadow:0 4px 16px rgba(227,179,65,0.28);
+    transition:transform .08s ease;
+  }
+  .primary-cta:active { transform:scale(0.98); }
+  .primary-cta svg { width:20px; height:20px; flex-shrink:0; }
+
+  /* ---- формы / поля ---- */
+  label { display:block; font-size:12.5px; color:var(--hint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+  input[type=text] { width:100%; background:var(--field); border:1px solid var(--border); border-radius:12px; padding:14px; color:var(--text); font-size:15px; margin-bottom:6px; }
+  input[type=text]:focus { outline:none; border-color:var(--gold); }
+  .hint-text { font-size:12.5px; color:var(--hint); margin-bottom:18px; }
+  .error-text { font-size:12.5px; color:var(--red); margin:-2px 0 14px; display:none; }
+  .primary-btn { width:100%; background:var(--gold); color:#211603; border:none; border-radius:14px; padding:16px; font-size:15.5px; font-weight:600; cursor:pointer; margin-top:8px; }
+  .primary-btn:disabled { opacity:.5; }
+  .primary-btn:active { opacity:.85; }
+  .secondary-btn { width:100%; background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:14px; padding:14px; font-size:14.5px; font-weight:500; cursor:pointer; margin-top:8px; }
+
+  /* ---- степпер заявки ---- */
+  .dots { display:flex; gap:6px; margin-bottom:22px; }
+  .dot { width:100%; height:3px; border-radius:2px; background:var(--border); transition:background .2s; }
+  .dot.active, .dot.done { background:var(--gold); }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .wallet-chip { display:flex; align-items:center; justify-content:space-between; background:var(--gold-dim); border-radius:12px; padding:14px; margin-bottom:18px; }
+  .wallet-chip .addr { font-family:"Space Grotesk",sans-serif; font-size:14px; color:var(--gold); word-break:break-all; padding-right:10px; }
+  .link-btn { background:none; border:none; color:var(--hint); font-size:13px; cursor:pointer; flex-shrink:0; }
+  .nft-row { display:flex; gap:8px; margin-bottom:8px; }
+  .nft-row input { margin-bottom:0; }
+  .remove-btn { width:46px; flex-shrink:0; background:var(--red-dim); color:var(--red); border:none; border-radius:12px; font-size:18px; cursor:pointer; }
+  .add-link-btn { width:100%; background:var(--card); border:1px dashed var(--border); color:var(--hint); border-radius:12px; padding:12px; font-size:14px; cursor:pointer; margin-top:4px; }
+  .summary-card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .summary-label { font-size:12px; color:var(--hint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .summary-value { font-size:14.5px; margin-bottom:14px; word-break:break-all; }
+  .summary-links { font-size:13.5px; line-height:1.6; }
+  .status-screen { text-align:center; padding:40px 10px; }
+  .status-icon { font-size:42px; margin-bottom:14px; }
+  .status-title { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:18px; margin-bottom:8px; }
+  .status-text { font-size:14px; color:var(--hint); }
+
+  /* ---- списки / карточки ---- */
+  .list-card { background:var(--card); border-radius:14px; padding:14px; margin-bottom:8px; border:1px solid transparent; }
+  .list-card.stale { border-color:var(--red); }
+
+  .queue-filters { display:flex; gap:6px; overflow-x:auto; margin-bottom:14px; padding-bottom:2px; }
+  .queue-filter-btn {
+    flex-shrink:0; background:var(--card); border:none; color:var(--hint); font-size:12.5px; font-weight:600;
+    padding:8px 13px; border-radius:20px; cursor:pointer; white-space:nowrap;
+  }
+  .queue-filter-btn.active { background:var(--gold-dim); color:var(--gold); }
+
+  .tag-stale, .tag-big {
+    display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:6px;
+  }
+  .tag-stale { background:var(--red-dim); color:var(--red); }
+  .tag-big { background:var(--gold-dim); color:var(--gold); }
+
+  .big-deal-warning {
+    background:var(--gold-dim); color:var(--gold); border:1px solid var(--gold);
+    border-radius:12px; padding:10px 14px; font-size:12.5px; font-weight:600; margin-bottom:12px; text-align:center;
+  }
+
+  .select-input {
+    width:100%; background:var(--field); border:1px solid var(--border); border-radius:12px;
+    padding:14px; color:var(--text); font-size:15px; margin-bottom:14px;
+  }
+  .textarea-input {
+    width:100%; background:var(--field); border:1px solid var(--border); border-radius:12px;
+    padding:14px; color:var(--text); font-size:14px; line-height:1.5; margin-bottom:14px; resize:vertical; font-family:inherit;
+  }
+  .log-entry { background:var(--card); border-radius:12px; padding:12px 14px; margin-bottom:6px; }
+  .log-entry-top { display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:3px; }
+  .log-entry-meta { font-size:11.5px; color:var(--hint); }
+  .list-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .list-title { font-size:14.5px; font-weight:500; }
+  .badge { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; }
+  .badge.pending { background:var(--amber-dim); color:var(--amber); }
+  .badge.waiting { background:var(--neutral-dim); color:var(--hint); }
+  .badge.in_progress { background:var(--violet-dim); color:var(--violet); }
+  .badge.completed { background:var(--green-dim); color:var(--green); }
+  .badge.rejected { background:var(--red-dim); color:var(--red); }
+  .list-meta { font-size:12.5px; color:var(--hint); }
+  .empty-state { text-align:center; color:var(--hint); font-size:14px; padding:40px 10px; }
+
+  .leaderboard-row { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:12px 14px; margin-bottom:6px; border:1px solid transparent; }
+  .leaderboard-rank { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:14px; color:var(--hint); width:22px; text-align:center; flex-shrink:0; }
+  .leaderboard-row.rank-1 { background:linear-gradient(135deg, var(--gold-dim), var(--card)); border-color:var(--gold); box-shadow:0 0 14px rgba(227,179,65,0.15); }
+  .leaderboard-row.rank-2 { border-color:rgba(255,255,255,0.35); }
+  .leaderboard-row.rank-3 { border-color:var(--amber); }
+  .leaderboard-medal {
+    width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:12.5px; flex-shrink:0;
+  }
+  .leaderboard-medal.gold { background:var(--gold); color:#211603; }
+  .leaderboard-medal.silver { background:#C6CBD3; color:#1A1D22; }
+  .leaderboard-medal.bronze { background:#C9793B; color:#2A1608; }
+
+  .info-step { display:flex; align-items:flex-start; gap:10px; font-size:13.5px; line-height:1.5; margin-bottom:12px; }
+  .info-step:last-child { margin-bottom:0; }
+  .info-step-num {
+    width:22px; height:22px; border-radius:50%; background:var(--gold-dim); color:var(--gold);
+    font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:11.5px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+  }
+  .info-rules { margin:0; padding-left:18px; font-size:13.5px; line-height:1.7; color:var(--text); }
+  .info-rules li { margin-bottom:6px; }
+  .info-rules li:last-child { margin-bottom:0; }
+
+  .faq-item { background:var(--card); border-radius:14px; margin-bottom:8px; overflow:hidden; }
+  .faq-question {
+    display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+    font-size:14px; font-weight:500; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .faq-arrow { color:var(--hint); transition:transform .2s; flex-shrink:0; }
+  .faq-item.open .faq-arrow { transform:rotate(180deg); }
+  .faq-answer { max-height:0; overflow:hidden; transition:max-height .25s ease; }
+  .faq-item.open .faq-answer { max-height:200px; }
+  .faq-answer-inner { padding:0 16px 14px; font-size:13px; color:var(--hint); line-height:1.5; }
+  .leaderboard-name { flex:1; font-size:14.5px; }
+  .leaderboard-points { font-size:13px; color:var(--gold); font-weight:600; }
+
+  .stub-block { text-align:center; padding:50px 10px; color:var(--hint); }
+  .stub-block .icon-chip { margin:0 auto 14px; width:52px; height:52px; }
+  .stub-block .icon-chip svg { width:26px; height:26px; }
+
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .stat-card { background:var(--card); border-radius:14px; padding:16px; }
+  .stat-num { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:22px; }
+  .stat-label { font-size:12px; color:var(--hint); margin-top:4px; }
+
+  .stat-grid-3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:18px; }
+  .stat-grid-3 .stat-card { text-align:center; padding:14px 6px; }
+  .stat-grid-3 .stat-num { font-size:18px; }
+
+  .bar-chart { display:flex; align-items:flex-end; gap:4px; height:140px; margin:8px 0 4px; }
+  .bar-chart-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:4px; }
+  .bar-chart-bar { width:100%; background:var(--gold); border-radius:4px 4px 0 0; min-height:2px; transition:height .3s; }
+  .bar-chart-label { font-size:9px; color:var(--hint); white-space:nowrap; }
+
+  .referral-box { background:var(--card); border-radius:14px; padding:16px; word-break:break-all; font-size:13.5px; color:var(--gold); margin-bottom:12px; }
+
+  .queue-badge { background:var(--red); color:#fff; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px; line-height:1.5; }
+
+  .mentor-card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:8px; }
+  .mentor-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .mentor-name { font-size:14.5px; font-weight:600; }
+  .mentor-terms { font-size:12.5px; color:var(--hint); margin-bottom:10px; }
+  .progress-track { width:100%; height:6px; border-radius:4px; background:var(--border); overflow:hidden; margin-top:8px; }
+  .progress-fill { height:100%; background:var(--violet); border-radius:4px; }
+  .small-btn { background:var(--violet-dim); color:var(--violet); border:none; border-radius:10px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .small-btn.danger { background:var(--red-dim); color:var(--red); }
+  .tab-switch { display:flex; gap:6px; margin-bottom:16px; background:var(--card); border-radius:12px; padding:4px; }
+  .tab-btn { flex:1; background:none; border:none; color:var(--hint); font-size:13.5px; font-weight:600; padding:10px; border-radius:9px; cursor:pointer; }
+  .tab-btn.active { background:var(--violet-dim); color:var(--violet); }
+
+  .achievements-summary { text-align:center; font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:19px; margin-bottom:16px; }
+  .achievements-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .achievement-card { position:relative; background:var(--card); border-radius:16px; padding:16px 10px; text-align:center; border:1.5px solid var(--border); transition:transform .1s; }
+  .achievement-card.locked { opacity:0.65; }
+  .achievement-card.tier-bronze { border-color:var(--amber); }
+  .achievement-card.tier-silver { border-color:rgba(255,255,255,0.3); }
+  .achievement-card.tier-gold { border-color:var(--gold); }
+  .achievement-card.tier-platinum { border-color:var(--violet); }
+  .achievement-card.locked.tier-bronze,
+  .achievement-card.locked.tier-silver,
+  .achievement-card.locked.tier-gold,
+  .achievement-card.locked.tier-platinum { border-color:var(--border); }
+  .achievement-lock-badge {
+    position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:50%;
+    background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; color:var(--hint);
+  }
+  .achievement-lock-badge svg { width:11px; height:11px; }
+  .achievement-icon { font-size:32px; margin-bottom:8px; }
+  .achievement-title { font-size:13px; font-weight:600; margin-bottom:4px; line-height:1.3; }
+  .achievement-desc { font-size:11px; color:var(--hint); line-height:1.4; }
+  .achievement-date { font-size:10.5px; color:var(--gold); margin-top:8px; font-weight:600; }
+  .achievement-tier-tag { font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-top:6px; }
+
+  /* ---- скелетоны загрузки ---- */
+  .skeleton { position:relative; overflow:hidden; background:var(--card); }
+  .skeleton::after {
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    animation:skeleton-shimmer 1.4s infinite;
+  }
+  @keyframes skeleton-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+  .skeleton-card { border-radius:14px; padding:14px; margin-bottom:8px; }
+  .skeleton-line { height:12px; border-radius:6px; background:var(--field); margin-bottom:8px; }
+  .skeleton-line:last-child { margin-bottom:0; }
+
+  /* ---- пустые состояния ---- */
+  .empty-state-block { text-align:center; padding:44px 16px; color:var(--hint); }
+  .empty-state-block svg { opacity:.55; margin-bottom:10px; }
+  .empty-state-text { font-size:14px; }
+
+  /* ---- конфетти при новом достижении ---- */
+  @keyframes confetti-fall { to { transform:translateY(110vh) rotate(360deg); opacity:0; } }
+
+  /* ---- нижняя навигация ---- */
+  body { padding-bottom:82px; }
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; z-index:50;
+    display:flex; background:var(--card); border-top:1px solid var(--border);
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav-item {
+    position:relative; flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color:var(--hint); font-size:10.5px; padding:6px 2px; cursor:pointer;
+  }
+  .bottom-nav-item.active { color:var(--gold); }
+  .bottom-nav-item svg { width:20px; height:20px; }
+  .nav-badge { position:absolute; top:2px; right:24%; width:8px; height:8px; border-radius:50%; background:var(--red); display:none; }
+  .unread-dot { width:8px; height:8px; border-radius:50%; background:var(--red); display:none; margin-left:6px; flex-shrink:0; }
+
+  /* ---- дневной стрик ---- */
+  .streak-card {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:linear-gradient(135deg, var(--amber-dim), var(--gold-dim));
+    border:1px solid var(--amber); border-radius:16px; padding:14px 16px; margin-bottom:18px;
+  }
+  .streak-info { display:flex; align-items:center; gap:10px; }
+  .streak-icon { font-size:26px; }
+  .streak-title { font-size:14px; font-weight:600; }
+  .streak-sub { font-size:12px; color:var(--hint); margin-top:2px; }
+  .streak-claim-btn {
+    background:var(--amber); color:#241804; border:none; border-radius:10px;
+    padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .streak-claim-btn:disabled { opacity:.45; }
+
+  .quest-reminder {
+    display:flex; align-items:center; gap:12px; background:var(--card);
+    border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:12px 14px;
+    margin-bottom:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .quest-reminder:active { background:var(--card-hover); }
+  .quest-reminder-text { font-size:13px; font-weight:500; }
+
+  .streak-schedule-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:16px; }
+  .streak-day-card { background:var(--card); border-radius:12px; padding:12px 4px; text-align:center; border:1.5px solid var(--border); }
+  .streak-day-card.passed { opacity:.45; }
+  .streak-day-card.current { border-color:var(--amber); background:var(--amber-dim); }
+  .streak-day-num { font-size:10.5px; color:var(--hint); margin-bottom:4px; }
+  .streak-day-reward { font-size:12px; font-weight:700; color:var(--gold); }
+
+  /* ---- колесо фортуны ---- */
+  .wheel-wrap { position:relative; width:280px; height:280px; margin:16px auto 8px; }
+  .wheel-legend { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .wheel-legend-item { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--hint); }
+  .wheel-legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+  .jackpot-banner {
+    text-align:center; background:linear-gradient(135deg, var(--amber-dim), var(--gold-dim));
+    border:1px solid var(--amber); border-radius:16px; padding:14px; margin-bottom:8px;
+  }
+  .jackpot-label { font-size:11.5px; color:var(--hint); margin-bottom:2px; }
+  .jackpot-amount { font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:24px; color:var(--amber); }
+
+  .lucky-of-week-card {
+    display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--gold);
+    border-radius:14px; padding:12px 14px; margin:14px 0; font-size:13px;
+  }
+  .wheel-win-row { display:flex; justify-content:space-between; align-items:center; background:var(--card); border-radius:12px; padding:10px 14px; margin-bottom:6px; font-size:12.5px; }
+  .wheel-win-name { color:var(--text); font-weight:500; }
+  .wheel-win-prize { color:var(--gold); font-weight:700; }
+  .wheel-pointer { position:absolute; top:-8px; left:50%; transform:translateX(-50%); font-size:24px; color:var(--gold); z-index:2; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+  .wheel-disc { width:100%; height:100%; border-radius:50%; border:4px solid var(--card); transition:transform 3.6s cubic-bezier(.15,.65,.2,1); }
+
+  .photo-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:10px 0 14px; }
+  .photo-thumb { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--field); }
+  .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-thumb .remove-photo-btn { position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.65); color:#fff; border:none; font-size:14px; line-height:1; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- ======================= ГЛАВНЫЙ ЭКРАН ======================= -->
+<div class="screen active" id="screen-home">
+  <div class="brand-header">
+    <svg viewBox="0 0 32 32" width="24" height="24" class="brand-mark">
+      <path d="M5 25 Q5 10 20 9" stroke="var(--gold)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M11 27 Q11 15 27 12" stroke="var(--violet)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+    </svg>
+    <span class="brand-wordmark">FLOW TEAM</span>
+  </div>
+
+  <div class="balance-card">
+    <div class="balance-top">
+      <div class="avatar-ring" id="avatar-ring"><div class="avatar-inner" id="avatar-initials">--</div></div>
+      <div>
+        <div class="user-name" id="user-name">Загрузка…</div>
+        <div class="user-level" id="user-level">—</div>
+      </div>
+    </div>
+    <div class="balance-label">Выплачено всего</div>
+    <div class="balance-amount" id="balance-amount">$0.00</div>
+  </div>
+
+  <div class="streak-card" onclick="showScreen('streak-info')">
+    <div class="streak-info">
+      <span class="icon-chip amber" style="width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:22px;height:22px"><path d="M12 2c1 3-2 4-2 7a3 3 0 0 0 6 0c2 1 3 3 3 5a7 7 0 1 1-14 0c0-3 1.5-5 3-7 1-1.3 1.5-2.7 1.5-5Z"/></svg></span>
+      <div>
+        <div class="streak-title">Ежедневный бонус</div>
+        <div class="streak-sub" id="streak-sub">—</div>
+      </div>
+    </div>
+    <button class="streak-claim-btn" id="streak-claim-btn" onclick="claimDailyBonus(event)">Забрать</button>
+  </div>
+
+  <div class="quest-reminder" id="quest-reminder" style="display:none" onclick="showScreen('achievements')">
+    <span class="icon-chip gold" style="width:36px;height:36px;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+    <div style="flex:1">
+      <div class="quest-reminder-text" id="quest-reminder-text">—</div>
+      <div class="progress-track" id="quest-reminder-track" style="margin-top:6px"><div class="progress-fill" id="quest-reminder-fill" style="width:0%"></div></div>
+    </div>
+    <span class="arrow">›</span>
+  </div>
+
+  <button class="primary-cta" onclick="showScreen('payout')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+    Подать заявку на выплату
+  </button>
+
+  <div class="section-label">Быстрый доступ</div>
+  <div class="grid">
+    <button class="item" onclick="showScreen('top')">
+      <span class="icon-chip gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></span>
+      <span class="label">Топ</span>
+    </button>
+    <button class="item" onclick="showScreen('profile')">
+      <span class="icon-chip gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      <span class="label">Профиль</span>
+    </button>
+    <button class="item wide" onclick="showScreen('my-requests')">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
+        <span class="label">Мои заявки</span>
+        <span class="unread-dot" id="my-requests-badge-home"></span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+  </div>
+
+  <div class="section-label">Игра и награды</div>
+  <div class="grid">
+    <button class="item" onclick="showScreen('wheel')">
+      <span class="icon-chip violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></span>
+      <span class="label">Колесо фортуны</span>
+      <span class="queue-badge" id="wheel-badge" style="display:none;margin-left:6px">0</span>
+    </button>
+    <button class="item" onclick="showScreen('achievements')">
+      <span class="icon-chip violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7h2v3a4 4 0 0 1-4 4M4 7H2v3a4 4 0 0 0 4 4"/><path d="M7 4h10v6a5 5 0 0 1-10 0V4Z"/><path d="M9 20h6M12 15v5"/></svg></span>
+      <span class="label">Прогресс</span>
+    </button>
+    <button class="item wide" onclick="showScreen('referral')">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 1.4 3.6L17 8l-3.6 1.4L12 13l-1.4-3.6L7 8l3.6-1.4L12 3ZM5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z"/></svg></span>
+        <span class="label">Пригласить друзей</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+  </div>
+
+  <div class="section-label">Сообщество</div>
+  <div class="grid">
+    <button class="item" onclick="showScreen('mentors')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 2.7-5 6-5s6 2 6 5M14 15c2.8 0 6 1.7 6 5"/></svg></span>
+      <span class="label">Наставники</span>
+    </button>
+    <button class="item" onclick="showScreen('info')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg></span>
+      <span class="label">Инфо</span>
+    </button>
+    <button class="item wide" onclick="openChannel()">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M4 9a8 8 0 0 1 14.9-3.4M20 15a8 8 0 0 1-14.9 3.4"/></svg></span>
+        <span class="label">Переходник</span>
+      </span>
+      <span class="arrow">↗</span>
+    </button>
+  </div>
+
+  <div class="section-label" id="admin-section-label" style="display:none">Администрирование</div>
+  <div class="grid">
+    <button class="item wide" id="settings-item" onclick="showScreen('settings')" style="display:none">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg></span>
+        <span class="label">Панель администратора</span>
+      </span>
+    </button>
+    <button class="item wide" id="queue-item" onclick="showScreen('admin-queue')" style="display:none">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></span>
+        <span class="label">Очередь заявок</span>
+      </span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="queue-badge" id="queue-badge" style="display:none">0</span>
+        <span class="arrow">›</span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- ======================= ВЫПЛАТА (степпер) ======================= -->
+<div class="screen" id="screen-payout">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle" id="payout-step-title">Кошелёк</div>
+  </div>
+  <div class="dots">
+    <div class="dot" data-step="0"></div><div class="dot" data-step="1"></div>
+    <div class="dot" data-step="2"></div><div class="dot" data-step="3"></div>
+    <div class="dot" data-step="4"></div>
+  </div>
+
+  <div class="panel" data-panel="0">
+    <div id="wallet-saved-block" style="display:none">
+      <div class="wallet-chip"><span class="addr" id="saved-wallet-text"></span>
+        <button class="link-btn" onclick="editWallet()">Изменить</button></div>
+    </div>
+    <div id="wallet-input-block">
+      <label>Адрес кошелька</label>
+      <input type="text" id="wallet-input" placeholder="Например: UQD...xyz">
+      <div class="hint-text">Укажите адрес кошелька в сети TON — выплаты идут в TON.</div>
+      <div class="error-text" id="wallet-error">Введите корректный адрес кошелька.</div>
+    </div>
+    <button class="primary-btn" onclick="nextFromWallet()">Далее</button>
+  </div>
+
+  <div class="panel" data-panel="1">
+    <label>Номер сделки</label>
+    <input type="text" id="deal-input" placeholder="Например: 128934">
+    <div class="hint-text">Номер сделки, по которой была продажа.</div>
+    <div class="error-text" id="deal-error">Укажите номер сделки.</div>
+    <button class="primary-btn" onclick="nextFromDeal()">Далее</button>
+  </div>
+
+  <div class="panel" data-panel="2">
+    <label>Ссылки на проданные NFT</label>
+    <div id="nft-links-container"></div>
+    <button class="add-link-btn" onclick="addNftRow()">+ Добавить ещё</button>
+    <div class="error-text" id="nft-error">Добавьте хотя бы одну ссылку.</div>
+    <button class="primary-btn" onclick="nextFromLinks()">Далее</button>
+  </div>
+
+  <div class="panel" data-panel="3">
+    <label>Фото подтверждения сделки</label>
+    <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event)">
+    <button class="secondary-btn" id="add-photo-btn" onclick="document.getElementById('photo-file-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>Прикрепить фото
+    </button>
+    <div class="photo-grid" id="photo-preview-grid"></div>
+    <div class="hint-text">Скриншоты сделки и переписки — это ускорит проверку. До 10 фото.</div>
+    <div class="error-text" id="photo-error">Прикрепите хотя бы одно фото.</div>
+    <button class="primary-btn" onclick="nextFromPhotos()">Далее</button>
+  </div>
+
+  <div class="panel" data-panel="4">
+    <div class="summary-card">
+      <div class="summary-label">Кошелёк</div><div class="summary-value" id="summary-wallet"></div>
+      <div class="summary-label">Номер сделки</div><div class="summary-value" id="summary-deal"></div>
+      <div class="summary-label">NFT-ссылки</div><div class="summary-value summary-links" id="summary-links"></div>
+      <div class="summary-label">Фото</div><div class="summary-value" id="summary-photos"></div>
+    </div>
+    <button class="primary-btn" id="submit-btn" onclick="submitRequest()">Отправить заявку</button>
+  </div>
+
+  <div class="panel" data-panel="5">
+    <div class="status-screen">
+      <div class="status-icon" id="status-icon">✅</div>
+      <div class="status-title" id="status-title">Заявка отправлена</div>
+      <div class="status-text" id="status-text">Мы уведомим вас, как только её рассмотрят.</div>
+      <button class="secondary-btn" onclick="showScreen('home')">На главную</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= МОИ ЗАЯВКИ ======================= -->
+<div class="screen" id="screen-my-requests">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Мои заявки</div>
+  </div>
+  <div id="my-requests-list"></div>
+</div>
+
+<div class="screen" id="screen-my-request-detail">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('my-requests')">‹</button>
+    <div class="subtitle">Заявка</div>
+  </div>
+  <div id="my-request-detail-content"></div>
+</div>
+
+<!-- ======================= ПРОФИЛЬ ======================= -->
+<div class="screen" id="screen-profile">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Профиль</div>
+  </div>
+
+  <div class="balance-card">
+    <div class="balance-top">
+      <div class="avatar-ring" id="profile-avatar-ring"><div class="avatar-inner" id="profile-avatar-initials">--</div></div>
+      <div>
+        <div class="user-name" id="profile-display-name">Загрузка…</div>
+        <div class="user-level" id="profile-meta">—</div>
+      </div>
+    </div>
+    <div class="balance-label">Выплачено всего</div>
+    <div class="balance-amount" id="profile-balance">0.00 TON</div>
+  </div>
+
+  <div class="stat-grid-3" id="profile-stats-grid"></div>
+
+  <button class="small-btn" style="width:100%;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="showScreen('levels')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M12 2 15 9l7 1-5 5 1.5 7L12 18l-6.5 4L7 15l-5-5 7-1Z"/></svg>
+    Все уровни и награды
+  </button>
+
+  <div class="section-label">Кошелёк для выплат</div>
+  <input type="text" id="profile-wallet-input" placeholder="Не указан">
+  <div class="hint-text">Будет подставляться автоматически при подаче заявки.</div>
+  <button class="primary-btn" onclick="saveProfileWallet()">Сохранить</button>
+  <div class="error-text" id="profile-error" style="margin-top:10px">Не удалось сохранить.</div>
+</div>
+
+<!-- ======================= ВСЕ УРОВНИ ======================= -->
+<div class="screen" id="screen-levels">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('profile')">‹</button>
+    <div class="subtitle">Уровни и награды</div>
+  </div>
+  <div id="levels-track"></div>
+</div>
+
+<!-- ======================= ТОП ======================= -->
+<div class="screen" id="screen-top">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Топ</div>
+  </div>
+  <div class="tab-switch">
+    <button class="tab-btn active" id="top-tab-balance" onclick="switchLeaderboardTab('balance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px"><path d="m12 3 1.4 3.6L17 8l-3.6 1.4L12 13l-1.4-3.6L7 8l3.6-1.4L12 3Z"/><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z"/></svg>По выплатам
+    </button>
+    <button class="tab-btn" id="top-tab-points" onclick="switchLeaderboardTab('points')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>По баллам
+    </button>
+  </div>
+  <div id="leaderboard-list"></div>
+</div>
+
+<!-- ======================= РЕФЕРАЛ ======================= -->
+<div class="screen" id="screen-referral">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Пригласить друзей</div>
+  </div>
+
+  <div class="mentor-card" style="margin-bottom:14px">
+    <div class="mentor-name" style="margin-bottom:6px">Как это работает</div>
+    <div class="mentor-terms" style="line-height:1.5">
+      Пригласили друга → он подписался и открыл меню → вам начислено 10 баллов.<br>
+      Друг завершил свою <b>первую успешную сделку</b> → вы дополнительно получаете
+      <span id="referral-percent-text" style="color:var(--gold);font-weight:700">…</span>
+      от его выплаты. Это не уменьшает то, что получает сам друг — начисляется вам сверху,
+      из ваших же будущих выплат.
+    </div>
+  </div>
+  <div class="hint-text" id="referral-percent-note"></div>
+
+  <div class="hint-text">Отправьте эту ссылку друзьям:</div>
+  <div class="referral-box" id="referral-link">—</div>
+  <button class="primary-btn" onclick="copyReferralLink()">Скопировать ссылку</button>
+</div>
+
+<!-- ======================= ИНФО ======================= -->
+<div class="screen" id="screen-info">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Инфо</div>
+  </div>
+
+  <div class="mentor-card" style="margin-bottom:14px">
+    <div class="mentor-name" style="margin-bottom:6px">О Flow Team</div>
+    <div class="mentor-terms" style="line-height:1.5" id="info-about-text">Загрузка…</div>
+  </div>
+
+  <div class="section-label">Как это работает</div>
+  <div class="mentor-card" style="margin-bottom:14px">
+    <div class="info-step"><span class="info-step-num">1</span>Продали NFT — соберите ссылки и, если есть, скриншоты сделки</div>
+    <div class="info-step"><span class="info-step-num">2</span>Подайте заявку в разделе «Выплата» — укажите кошелёк и номер сделки</div>
+    <div class="info-step"><span class="info-step-num">3</span>Админ проверяет заявку и вводит сумму сделки</div>
+    <div class="info-step"><span class="info-step-num">4</span>Вы получаете свою долю на кошелёк в TON</div>
+  </div>
+
+  <div class="section-label">Условия</div>
+  <div class="mentor-card" style="margin-bottom:14px" id="info-terms">
+    <div class="hint-text">Загрузка…</div>
+  </div>
+
+  <div class="section-label">Правила</div>
+  <div class="mentor-card" style="margin-bottom:14px">
+    <ul class="info-rules" id="info-rules-list"></ul>
+  </div>
+
+  <div class="section-label">Частые вопросы</div>
+  <div id="info-faq"></div>
+
+  <div class="section-label">Поддержка</div>
+  <button class="secondary-btn" style="display:flex;align-items:center;justify-content:center;gap:8px" onclick="openSupport()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+    Написать в поддержку
+  </button>
+</div>
+
+<!-- ======================= НАСТАВНИКИ / ДОСТИЖЕНИЯ (заглушки) ======================= -->
+<div class="screen" id="screen-mentors">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('home')">‹</button><div class="subtitle">Наставники</div></div>
+  <div id="mentors-content"></div>
+</div>
+
+<div class="screen" id="screen-achievements">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('home')">‹</button><div class="subtitle">Прогресс</div></div>
+  <div class="tab-switch">
+    <button class="tab-btn active" id="progress-tab-achievements" onclick="switchProgressTab('achievements')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px"><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/><circle cx="12" cy="8" r="6"/></svg>Достижения
+    </button>
+    <button class="tab-btn" id="progress-tab-quests" onclick="switchProgressTab('quests')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Задания
+    </button>
+  </div>
+  <div id="achievements-content"></div>
+  <div id="quests-list" style="display:none"></div>
+</div>
+
+<!-- ======================= РАСПИСАНИЕ НАГРАД СТРИКА ======================= -->
+<div class="screen" id="screen-streak-info">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('home')">‹</button><div class="subtitle">Ежедневные награды</div></div>
+  <div class="hint-text">Заходите каждый день без пропусков — награда растёт. Пропустите день — серия начнётся заново.</div>
+  <div class="streak-schedule-grid" id="streak-schedule-grid"></div>
+</div>
+
+<!-- ======================= КОЛЕСО ФОРТУНЫ ======================= -->
+<div class="screen" id="screen-wheel">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('home')">‹</button><div class="subtitle">Колесо фортуны</div></div>
+  <div class="hint-text" style="text-align:center">Получаете 1 попытку за каждую одобренную выплату.</div>
+
+  <div class="jackpot-banner">
+    <div class="jackpot-label">💰 Джекпот прямо сейчас</div>
+    <div class="jackpot-amount" id="wheel-jackpot-amount">— TON</div>
+  </div>
+
+  <div class="wheel-wrap">
+    <div class="wheel-pointer">▼</div>
+    <div class="wheel-disc" id="wheel-disc"></div>
+  </div>
+  <div class="wheel-legend">
+    <span class="wheel-legend-item"><span class="wheel-legend-dot" style="background:var(--gold)"></span>Баллы</span>
+    <span class="wheel-legend-item"><span class="wheel-legend-dot" style="background:var(--violet)"></span>TON</span>
+    <span class="wheel-legend-item"><span class="wheel-legend-dot" style="background:var(--green)"></span>Доля на сутки</span>
+    <span class="wheel-legend-item"><span class="wheel-legend-dot" style="background:var(--amber)"></span>Джекпот</span>
+    <span class="wheel-legend-item"><span class="wheel-legend-dot" style="background:var(--hint)"></span>Ещё попытка</span>
+  </div>
+  <div class="hint-text" id="wheel-spins-text" style="text-align:center">Доступно попыток: 0</div>
+  <div class="big-deal-warning" id="wheel-active-boost" style="display:none"></div>
+  <button class="primary-btn" id="wheel-spin-btn" onclick="spinWheel()">Крутить</button>
+  <div class="hint-text" id="wheel-result" style="text-align:center;min-height:20px"></div>
+  <div id="wheel-claim-form" style="display:none;margin-top:14px"></div>
+
+  <div id="wheel-lucky-of-week" style="display:none"></div>
+
+  <div class="section-label">Последние выигрыши</div>
+  <div id="wheel-recent-wins"></div>
+</div>
+
+<!-- ======================= ОЧЕРЕДЬ ЗАЯВОК (админ) ======================= -->
+<div class="screen" id="screen-admin-queue">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Очередь заявок</div>
+  </div>
+  <div class="queue-filters">
+    <button class="queue-filter-btn active" onclick="switchQueueFilter('pending,waiting,in_progress', this)">Все активные</button>
+    <button class="queue-filter-btn" onclick="switchQueueFilter('pending', this)">Новые</button>
+    <button class="queue-filter-btn" onclick="switchQueueFilter('waiting', this)">Отложенные</button>
+    <button class="queue-filter-btn" onclick="switchQueueFilter('in_progress', this)">В обработке</button>
+  </div>
+  <div id="admin-queue-list"></div>
+</div>
+
+<div class="screen" id="screen-admin-request-detail">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('admin-queue')">‹</button>
+    <div class="subtitle">Заявка</div>
+  </div>
+  <div id="admin-request-detail-content"></div>
+</div>
+
+<!-- ======================= НАСТРОЙКИ (админ) ======================= -->
+<div class="screen" id="screen-settings">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('home')">‹</button>
+    <div class="subtitle">Панель администратора</div>
+  </div>
+  <div class="stat-grid" id="admin-stats-grid"></div>
+
+  <div class="section-label">Проценты</div>
+  <div id="admin-percent-settings"></div>
+
+  <div class="section-label">Наставники</div>
+  <div id="admin-mentors-list"></div>
+
+  <div class="section-label">Инструменты</div>
+  <div class="grid">
+    <button class="item" onclick="showScreen('admin-users')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="18" cy="8" r="2.5"/><path d="M16.5 14.2c2.6.4 4.5 2.4 4.5 5.8"/></svg></span>
+      <span class="label">Пользователи</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-search-deal')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      <span class="label">Поиск заявки</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-admins')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 3 6v6c0 5 4 8 9 10 5-2 9-5 9-10V6l-9-4Z"/></svg></span>
+      <span class="label">Админы</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-broadcast')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2Z"/><path d="M17 8a5 5 0 0 1 0 8M20 5a9 9 0 0 1 0 14"/></svg></span>
+      <span class="label">Рассылка</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-analytics')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></svg></span>
+      <span class="label">Аналитика</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-export')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
+      <span class="label">Экспорт CSV</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-log')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-4M9 11V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-4"/></svg></span>
+      <span class="label">Журнал действий</span>
+    </button>
+    <button class="item" onclick="showScreen('admin-faq')">
+      <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5M12 17v.01"/></svg></span>
+      <span class="label">Инфо и FAQ</span>
+    </button>
+    <button class="item wide" onclick="showScreen('admin-wheel-claims')">
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="icon-chip neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></span>
+        <span class="label">Призы колеса на выплату</span>
+      </span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="queue-badge" id="wheel-claims-badge" style="display:none">0</span>
+        <span class="arrow">›</span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- ======================= АНАЛИТИКА ======================= -->
+<div class="screen" id="screen-admin-analytics">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Аналитика</div></div>
+  <div id="admin-analytics-content"></div>
+</div>
+
+<div class="screen" id="screen-admin-users">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Пользователи</div></div>
+  <input type="text" id="admin-users-search" placeholder="Имя, юзернейм или Telegram ID" oninput="debouncedUserSearch()">
+  <div id="admin-users-list"></div>
+</div>
+
+<div class="screen" id="screen-admin-search-deal">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Поиск заявки</div></div>
+  <input type="text" id="admin-search-input" placeholder="Номер сделки, имя или Telegram ID" oninput="debouncedRequestSearch()">
+  <div id="admin-search-results"></div>
+</div>
+
+<div class="screen" id="screen-admin-admins">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Админы</div></div>
+  <label>Telegram ID нового админа</label>
+  <input type="text" id="new-admin-id-input" placeholder="Узнать можно через @userinfobot">
+  <button class="primary-btn" onclick="addAdmin()">Добавить</button>
+  <div class="error-text" id="add-admin-error">Введите корректный Telegram ID.</div>
+  <div class="section-label">Текущие админы</div>
+  <div id="admins-list"></div>
+</div>
+
+<div class="screen" id="screen-admin-broadcast">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Рассылка</div></div>
+  <label>Текст сообщения</label>
+  <input type="text" id="broadcast-text-input" placeholder="Сообщение для всех пользователей">
+  <div class="hint-text">Уйдёт всем, кто хоть раз открывал бота. Действие нельзя отменить.</div>
+  <button class="primary-btn" onclick="sendBroadcast()">Отправить всем</button>
+  <div id="broadcast-result" class="hint-text"></div>
+</div>
+
+<div class="screen" id="screen-admin-export">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Экспорт CSV</div></div>
+  <label>Статус</label>
+  <select id="export-status-select" class="select-input">
+    <option value="">Все статусы</option>
+    <option value="pending">На рассмотрении</option>
+    <option value="waiting">В ожидании</option>
+    <option value="in_progress">В обработке</option>
+    <option value="completed">Выплачено</option>
+    <option value="rejected">Отклонено</option>
+  </select>
+  <label>Период с</label>
+  <input type="date" id="export-date-from" class="select-input">
+  <label>Период по</label>
+  <input type="date" id="export-date-to" class="select-input">
+  <div class="hint-text">Оставьте поля пустыми, чтобы выгрузить всю историю.</div>
+  <button class="primary-btn" onclick="exportCsv()" id="export-csv-btn">Отправить файл</button>
+  <div class="hint-text" id="export-result"></div>
+</div>
+
+<div class="screen" id="screen-admin-log">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Журнал действий</div></div>
+  <div id="admin-log-list"></div>
+</div>
+
+<div class="screen" id="screen-admin-faq">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Инфо и FAQ</div></div>
+
+  <div class="section-label">О площадке</div>
+  <textarea id="info-about-input" class="textarea-input" rows="4"></textarea>
+
+  <div class="section-label">Правила (каждое с новой строки)</div>
+  <textarea id="info-rules-input" class="textarea-input" rows="5"></textarea>
+  <button class="primary-btn" onclick="saveInfoContent()">Сохранить</button>
+  <div class="hint-text" id="info-save-result"></div>
+
+  <div class="section-label">Частые вопросы</div>
+  <div id="admin-faq-list"></div>
+
+  <div class="section-label">Добавить вопрос</div>
+  <input type="text" id="new-faq-question" placeholder="Вопрос">
+  <input type="text" id="new-faq-answer" placeholder="Ответ">
+  <button class="primary-btn" onclick="addFaqItem()">Добавить</button>
+</div>
+
+<div class="screen" id="screen-admin-wheel-claims">
+  <div class="subheader"><button class="back-btn" onclick="showScreen('settings')">‹</button><div class="subtitle">Призы колеса на выплату</div></div>
+  <div class="hint-text">Игрок уже указал кошелёк — осталось отправить деньги вручную и подтвердить здесь.</div>
+  <div id="admin-wheel-claims-list"></div>
+</div>
+
+<!-- ======================= НИЖНЯЯ НАВИГАЦИЯ ======================= -->
+<div class="bottom-nav">
+  <button class="bottom-nav-item active" data-nav="home" onclick="showScreen('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    Главная
+  </button>
+  <button class="bottom-nav-item" data-nav="payout" onclick="showScreen('payout')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+    Выплата
+  </button>
+  <button class="bottom-nav-item" data-nav="my-requests" onclick="showScreen('my-requests')">
+    <span class="nav-badge" id="nav-requests-badge"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+    Заявки
+  </button>
+  <button class="bottom-nav-item" data-nav="profile" onclick="showScreen('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    Профиль
+  </button>
+</div>
+
+<script>
+
+  const tg = window.Telegram?.WebApp;
+  tg?.expand();
+  tg?.ready();
+
+  const API_BASE_URL = "https://your-backend.example.com";
+  const CHANNEL_URL = "https://t.me/+jlgnmosReI05MzVi";
+  const BOT_USERNAME = "UpFlowTeamBot";
+  const BRAND_NAME = "Flow Team";
+
+  function authHeader() {
+    return { Authorization: `tma ${tg?.initData ?? ''}` };
+  }
+
+  // Синхронизировано с LEVELS в points.py — если меняете пороги там, поменяйте и здесь.
+  const LEVELS_TABLE = [
+    { level: 1, min_points: 0, name: 'Новичок' },
+    { level: 2, min_points: 100, name: 'Активный' },
+    { level: 3, min_points: 300, name: 'Профи' },
+    { level: 4, min_points: 700, name: 'Эксперт' },
+    { level: 5, min_points: 1500, name: 'Мастер' },
+  ];
+
+  function applyAvatarFrame(el, level) {
+    el.classList.remove('frame-glow', 'frame-legendary');
+    if (level >= 5) el.classList.add('frame-legendary');
+    else if (level >= 3) el.classList.add('frame-glow');
+  }
+
+  // ---------- Скелетоны загрузки ----------
+  function skeletonCards(count = 3) {
+    return Array.from({ length: count }).map(() => `
+      <div class="skeleton-card skeleton">
+        <div class="skeleton-line" style="width:55%"></div>
+        <div class="skeleton-line" style="width:35%"></div>
+      </div>
+    `).join('');
+  }
+
+  function skeletonGrid(count = 4) {
+    return `<div class="grid">${Array.from({ length: count }).map(() => `
+      <div class="skeleton-card skeleton" style="height:60px"></div>
+    `).join('')}</div>`;
+  }
+
+  // ---------- Пустые состояния с иллюстрацией ----------
+  function emptyState(text) {
+    return `
+      <div class="empty-state-block">
+        <svg viewBox="0 0 64 64" width="52" height="52" fill="none" stroke="var(--hint)" stroke-width="1.5">
+          <path d="M12 28 L20 14 H44 L52 28" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M12 28 H52 V46 A4 4 0 0 1 48 50 H16 A4 4 0 0 1 12 46 Z" stroke-linejoin="round"/>
+          <path d="M12 28 L22 34 H42 L52 28" stroke-linejoin="round"/>
+        </svg>
+        <div class="empty-state-text">${text}</div>
+      </div>
+    `;
+  }
+
+  // ---------- Конфетти при недавно открытом достижении ----------
+  function fireConfetti() {
+    const colors = ['#E3B341', '#8C7CF0', '#4ADE80', '#E4574C'];
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden;';
+    document.body.appendChild(container);
+    for (let i = 0; i < 40; i++) {
+      const piece = document.createElement('div');
+      const size = 6 + Math.random() * 6;
+      piece.style.cssText = `
+        position:absolute; top:-20px; left:${Math.random() * 100}%;
+        width:${size}px; height:${size * 0.4}px; background:${colors[i % colors.length]};
+        opacity:${0.7 + Math.random() * 0.3}; border-radius:2px;
+        transform:rotate(${Math.random() * 360}deg);
+        animation:confetti-fall ${1.6 + Math.random() * 1.2}s ease-in forwards;
+        animation-delay:${Math.random() * 0.3}s;
+      `;
+      container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 3000);
+  }
+
+  function openChannel() {
+    tg?.HapticFeedback?.impactOccurred('light');
+    tg?.openLink ? tg.openLink(CHANNEL_URL) : window.open(CHANNEL_URL, '_blank');
+  }
+
+  // ---------- Навигация между экранами ----------
+  const loaders = {
+    'my-requests': loadMyRequests,
+    'profile': loadProfile,
+    'top': openTopScreen,
+    'referral': loadReferral,
+    'settings': loadSettingsScreen,
+    'payout': resetPayoutWizard,
+    'admin-queue': loadAdminQueue,
+    'mentors': loadMentorsScreen,
+    'achievements': openProgressScreen,
+    'admin-users': loadAdminUsers,
+    'admin-admins': loadAdminsList,
+    'admin-analytics': loadAdminAnalytics,
+    'admin-log': loadAdminLog,
+    'admin-faq': loadAdminFaqScreen,
+    'admin-wheel-claims': loadAdminWheelClaims,
+    'wheel': openWheelScreen,
+    'streak-info': loadStreakInfo,
+    'levels': loadLevelsTrack,
+    'info': loadInfoScreen,
+  };
+
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    tg?.HapticFeedback?.impactOccurred('light');
+    if (loaders[name]) loaders[name]();
+
+    document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.nav === name);
+    });
+  }
+
+  // ---------- Главный экран: баланс, уровень, права админа ----------
+  async function loadHome() {
+    if (!tg?.initData) {
+      document.getElementById('user-name').textContent = "Тестовый пользователь";
+      document.getElementById('user-level').textContent = "Откройте через Telegram";
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me`, { headers: authHeader() });
+      if (!res.ok) throw new Error();
+      const me = await res.json();
+
+      if (me.is_admin) {
+        document.getElementById('admin-section-label').style.display = 'block';
+        document.getElementById('settings-item').style.display = 'flex';
+        document.getElementById('queue-item').style.display = 'flex';
+        loadQueueBadge();
+      }
+
+      const name = me.first_name || "Пользователь";
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('avatar-initials').textContent = name.slice(0, 2).toUpperCase();
+      document.getElementById('balance-amount').textContent = `${me.balance.toFixed(2)} TON`;
+
+      const lvl = me.level;
+      document.getElementById('user-level').textContent =
+        lvl.points_to_next > 0
+          ? `Уровень ${lvl.level} · ${lvl.name} · ещё ${lvl.points_to_next} баллов`
+          : `Уровень ${lvl.level} · ${lvl.name} · максимум`;
+      document.getElementById('avatar-ring').style.background =
+        `conic-gradient(var(--gold) 0% ${lvl.progress_percent}%, rgba(255,255,255,0.08) ${lvl.progress_percent}% 100%)`;
+      applyAvatarFrame(document.getElementById('avatar-ring'), lvl.level);
+
+      checkRequestsUpdates();
+      loadDailyBonus();
+      loadWheelBadge();
+      loadQuestReminder();
+    } catch (e) {
+      document.getElementById('user-name').textContent = "Не удалось загрузить";
+    }
+  }
+
+  // ---------- Индикатор непрочитанных изменений в заявках ----------
+  const REQUESTS_SEEN_KEY = 'seen_requests_v1';
+
+  function getSeenRequestsMap() {
+    try { return JSON.parse(localStorage.getItem(REQUESTS_SEEN_KEY) || '{}'); } catch (e) { return {}; }
+  }
+
+  function markRequestsAsSeen(items) {
+    const map = {};
+    items.forEach(r => { map[r.id] = r.status; });
+    try { localStorage.setItem(REQUESTS_SEEN_KEY, JSON.stringify(map)); } catch (e) {}
+    document.getElementById('nav-requests-badge').style.display = 'none';
+    const homeBadge = document.getElementById('my-requests-badge-home');
+    if (homeBadge) homeBadge.style.display = 'none';
+  }
+
+  async function checkRequestsUpdates() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/my-requests`, { headers: authHeader() });
+      const items = await res.json();
+      const seen = getSeenRequestsMap();
+      const hasUpdates = items.some(r => seen[r.id] !== r.status);
+      if (hasUpdates) {
+        document.getElementById('nav-requests-badge').style.display = 'block';
+        const homeBadge = document.getElementById('my-requests-badge-home');
+        if (homeBadge) homeBadge.style.display = 'inline-block';
+      }
+    } catch (e) { /* тихо игнорируем — это не критичный индикатор */ }
+  }
+
+  // ---------- Дневной бонус ----------
+  function streakWord(n) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'день';
+    if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'дня';
+    return 'дней';
+  }
+
+  async function loadDailyBonus() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/daily-bonus/status`, { headers: authHeader() });
+      const s = await res.json();
+      updateStreakCard(s.streak, s.claimed_today);
+    } catch (e) {}
+  }
+
+  function updateStreakCard(streak, claimedToday) {
+    document.getElementById('streak-sub').textContent = `Серия: ${streak} ${streakWord(streak)}`;
+    const btn = document.getElementById('streak-claim-btn');
+    btn.textContent = claimedToday ? 'Уже забрано' : 'Забрать';
+    btn.disabled = claimedToday;
+  }
+
+  async function claimDailyBonus(event) {
+    event.stopPropagation();
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/daily-bonus/claim`, { method: 'POST', headers: authHeader() });
+      if (!res.ok) return;
+      const data = await res.json();
+      tg?.HapticFeedback?.notificationOccurred('success');
+      updateStreakCard(data.streak, true);
+      fireConfetti();
+      loadHome();
+    } catch (e) {}
+  }
+
+  async function loadStreakInfo() {
+    const el = document.getElementById('streak-schedule-grid');
+    el.innerHTML = skeletonCards(2);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/daily-bonus/status`, { headers: authHeader() });
+      const status = await res.json();
+      renderStreakSchedule(status);
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  function renderStreakSchedule(status) {
+    const el = document.getElementById('streak-schedule-grid');
+    const cycleLength = status.schedule.length;
+    const displayDay = status.claimed_today
+      ? status.day_in_cycle
+      : (status.day_in_cycle === 0 ? 1 : (status.day_in_cycle % cycleLength) + 1);
+
+    el.innerHTML = status.schedule.map(d => {
+      const passed = d.day < displayDay || (status.claimed_today && d.day === displayDay);
+      const isCurrent = !status.claimed_today && d.day === displayDay;
+      return `
+        <div class="streak-day-card ${passed ? 'passed' : ''} ${isCurrent ? 'current' : ''}">
+          <div class="streak-day-num">${d.day} день</div>
+          <div class="streak-day-reward">+${d.points}${d.ton_bonus ? ` · +${d.ton_bonus}T` : ''}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ---------- Колесо фортуны ----------
+  const WHEEL_PRIZES_DISPLAY = [
+    { label: '10', colorVar: 'var(--gold)' },      // баллы
+    { label: '0.5', colorVar: 'var(--violet)' },   // TON
+    { label: '↻', colorVar: 'var(--hint)' },       // ещё попытка
+    { label: '20', colorVar: 'var(--gold)' },
+    { label: '75%', colorVar: 'var(--green)' },    // буст доли
+    { label: '1', colorVar: 'var(--violet)' },
+    { label: '···', colorVar: 'var(--border)' },   // пусто
+    { label: '5', colorVar: 'var(--gold)' },
+    { label: '2', colorVar: 'var(--violet)' },
+    { label: '80%★', colorVar: 'var(--green)' },
+    { label: '15', colorVar: 'var(--gold)' },
+    { label: '💰', colorVar: 'var(--amber)' },     // джекпот — сумма плавающая
+  ];
+  let wheelRotation = 0;
+
+  function buildWheel() {
+    const segCount = WHEEL_PRIZES_DISPLAY.length;
+    const segAngle = 360 / segCount;
+    const cx = 100, cy = 100, r = 100;
+    let svg = '';
+    for (let i = 0; i < segCount; i++) {
+      const startAngle = i * segAngle;
+      const endAngle = startAngle + segAngle;
+      const x1 = cx + r * Math.sin(startAngle * Math.PI / 180);
+      const y1 = cy - r * Math.cos(startAngle * Math.PI / 180);
+      const x2 = cx + r * Math.sin(endAngle * Math.PI / 180);
+      const y2 = cy - r * Math.cos(endAngle * Math.PI / 180);
+      const midAngle = startAngle + segAngle / 2;
+      const tx = cx + (r * 0.66) * Math.sin(midAngle * Math.PI / 180);
+      const ty = cy - (r * 0.66) * Math.cos(midAngle * Math.PI / 180);
+      const label = WHEEL_PRIZES_DISPLAY[i].label;
+      const fontSize = label.length > 3 ? 8.5 : label.length > 2 ? 9.5 : 11;
+      svg += `
+        <path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 0,1 ${x2.toFixed(2)},${y2.toFixed(2)} Z"
+              fill="${WHEEL_PRIZES_DISPLAY[i].colorVar}" stroke="var(--bg)" stroke-width="1.5"/>
+        <text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" text-anchor="middle" font-size="${fontSize}" fill="#0B0E14"
+              font-weight="700" font-family="'Space Grotesk',sans-serif"
+              transform="rotate(${midAngle}, ${tx.toFixed(2)}, ${ty.toFixed(2)})">${label}</text>
+      `;
+    }
+    document.getElementById('wheel-disc').innerHTML = `<svg viewBox="0 0 200 200" width="100%" height="100%">${svg}</svg>`;
+  }
+
+  function openWheelScreen() {
+    buildWheel();
+    document.getElementById('wheel-result').textContent = '';
+    document.getElementById('wheel-claim-form').style.display = 'none';
+    document.getElementById('wheel-claim-form').innerHTML = '';
+    loadWheelStatus();
+    loadWheelRecentWins();
+    loadLuckyOfWeek();
+  }
+
+  async function loadWheelStatus() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/status`, { headers: authHeader() });
+      const s = await res.json();
+      document.getElementById('wheel-spins-text').textContent = `Доступно попыток: ${s.spins_available}`;
+      document.getElementById('wheel-spin-btn').disabled = s.spins_available <= 0;
+      document.getElementById('wheel-jackpot-amount').textContent = `${s.jackpot_pool.toFixed(2)} TON`;
+
+      const boostEl = document.getElementById('wheel-active-boost');
+      if (s.active_boost_percent) {
+        boostEl.style.display = 'block';
+        boostEl.textContent = `🔥 Сейчас действует повышенная доля: ${s.active_boost_percent}%`;
+      } else {
+        boostEl.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
+  function describeWheelPrize(item) {
+    switch (item.prize_type) {
+      case 'points': return `+${item.prize_amount} баллов`;
+      case 'ton': return `${item.prize_amount} TON`;
+      case 'ton_jackpot': return `💰 ${item.prize_amount} TON — джекпот!`;
+      case 'boost': return `доля ${item.prize_amount}% на сутки`;
+      case 'respin': return 'ещё попытка';
+      default: return '';
+    }
+  }
+
+  async function loadWheelRecentWins() {
+    const el = document.getElementById('wheel-recent-wins');
+    el.innerHTML = skeletonCards(2);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/recent-wins`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(item => `
+        <div class="wheel-win-row">
+          <span class="wheel-win-name">${item.first_name || 'Игрок'}</span>
+          <span class="wheel-win-prize">${describeWheelPrize(item)}</span>
+        </div>
+      `).join('') : emptyState('Пока никто не крутил колесо');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function loadLuckyOfWeek() {
+    const el = document.getElementById('wheel-lucky-of-week');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/lucky-of-week`, { headers: authHeader() });
+      const data = await res.json();
+      if (data.telegram_id) {
+        el.style.display = 'flex';
+        el.className = 'lucky-of-week-card';
+        el.innerHTML = `🍀 Счастливчик недели: <b style="color:var(--gold)">${data.first_name}</b> — ${data.total_ton.toFixed(2)} TON выиграно на колесе`;
+      } else {
+        el.style.display = 'none';
+      }
+    } catch (e) {
+      el.style.display = 'none';
+    }
+  }
+
+  async function loadWheelBadge() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/status`, { headers: authHeader() });
+      const s = await res.json();
+      const badge = document.getElementById('wheel-badge');
+      if (s.spins_available > 0) {
+        badge.textContent = s.spins_available;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
+  async function spinWheel() {
+    const btn = document.getElementById('wheel-spin-btn');
+    btn.disabled = true;
+    document.getElementById('wheel-result').textContent = '';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/spin`, { method: 'POST', headers: authHeader() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        document.getElementById('wheel-result').textContent = err.detail || 'Нет доступных попыток';
+        btn.disabled = false;
+        return;
+      }
+      const data = await res.json();
+      const segCount = WHEEL_PRIZES_DISPLAY.length;
+      const segAngle = 360 / segCount;
+      const targetMid = data.index * segAngle + segAngle / 2;
+      const spins = 5;
+      wheelRotation += spins * 360 + (360 - targetMid) - (wheelRotation % 360);
+      document.getElementById('wheel-disc').style.transform = `rotate(${wheelRotation}deg)`;
+
+      setTimeout(() => {
+        let prizeText;
+        let celebrate = true;
+        switch (data.prize.type) {
+          case 'ton':
+            prizeText = `Выигрыш: ${data.prize.amount} TON`;
+            break;
+          case 'ton_jackpot':
+            prizeText = `💰 ДЖЕКПОТ! Выигрыш: ${data.prize.amount.toFixed(2)} TON`;
+            break;
+          case 'boost':
+            prizeText = `Выигрыш: доля выплаты ${data.prize.amount}% на ближайшие 24 часа!`;
+            break;
+          case 'respin':
+            prizeText = 'Ещё одна попытка — крутите снова!';
+            break;
+          case 'empty':
+            prizeText = 'В этот раз не повезло — попробуйте в следующий раз.';
+            celebrate = false;
+            break;
+          default:
+            prizeText = `Выигрыш: ${data.prize.amount} баллов`;
+        }
+        document.getElementById('wheel-result').textContent = prizeText;
+        if (celebrate) {
+          tg?.HapticFeedback?.notificationOccurred('success');
+          fireConfetti();
+        } else {
+          tg?.HapticFeedback?.notificationOccurred('warning');
+        }
+        loadWheelStatus();
+        loadWheelBadge();
+        loadWheelRecentWins();
+        loadLuckyOfWeek();
+        btn.disabled = false;
+
+        if (data.claim_id) showWheelClaimForm(data.claim_id);
+      }, 3700);
+    } catch (e) {
+      btn.disabled = false;
+    }
+  }
+
+  async function showWheelClaimForm(claimId) {
+    const container = document.getElementById('wheel-claim-form');
+    let savedWallet = '';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me`, { headers: authHeader() });
+      const me = await res.json();
+      savedWallet = me.wallet_address || '';
+    } catch (e) {}
+
+    container.style.display = 'block';
+    container.innerHTML = `
+      <label>Кошелёк для получения приза</label>
+      <input type="text" id="wheel-claim-wallet-input" placeholder="Адрес TON-кошелька" value="${savedWallet}">
+      <button class="primary-btn" onclick="submitWheelClaimWallet(${claimId})">Отправить</button>
+      <div class="error-text" id="wheel-claim-error">Проверьте адрес кошелька.</div>
+    `;
+  }
+
+  async function submitWheelClaimWallet(claimId) {
+    const wallet = document.getElementById('wheel-claim-wallet-input').value.trim();
+    const errorEl = document.getElementById('wheel-claim-error');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wheel/claims/${claimId}/wallet`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: wallet }),
+      });
+      if (!res.ok) { errorEl.style.display = 'block'; return; }
+      errorEl.style.display = 'none';
+      document.getElementById('wheel-claim-form').innerHTML =
+        '<div class="hint-text">Заявка на выплату приза отправлена админу ✅</div>';
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } catch (e) {
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ---------- Задания ----------
+  async function loadQuests() {
+    const el = document.getElementById('quests-list');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quests`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(q => {
+        const pct = Math.round((q.progress / q.target) * 100);
+        let actionHtml;
+        if (q.claimed) actionHtml = `<div class="hint-text" style="margin:8px 0 0">Награда получена ✅</div>`;
+        else if (q.completed) actionHtml = `<button class="small-btn" style="margin-top:8px" onclick="claimQuest('${q.id}')">Забрать +${q.reward_points} баллов</button>`;
+        else actionHtml = `<div class="hint-text" style="margin:8px 0 0">${q.progress}/${q.target} выполнено</div>`;
+
+        return `
+          <div class="mentor-card">
+            <div class="mentor-top"><span class="mentor-name">${q.icon} ${q.title}</span></div>
+            <div class="mentor-terms">${q.description}</div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+            ${actionHtml}
+          </div>
+        `;
+      }).join('') : emptyState('Заданий пока нет');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function claimQuest(questId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quests/claim`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quest_id: questId }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      tg?.HapticFeedback?.notificationOccurred('success');
+      fireConfetti();
+      if (data.bonus_spin) {
+        setTimeout(() => {
+          tg?.showAlert
+            ? tg.showAlert('Задания недели выполнены полностью. Начислена дополнительная попытка колеса фортуны.')
+            : alert('Задания недели выполнены полностью. Начислена дополнительная попытка колеса фортуны.');
+        }, 400);
+      }
+      loadQuests();
+      loadQuestReminder();
+      loadWheelBadge();
+    } catch (e) {}
+  }
+
+  // ---------- Напоминание о заданиях недели (главный экран) ----------
+  async function loadQuestReminder() {
+    const el = document.getElementById('quest-reminder');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/quests`, { headers: authHeader() });
+      const items = await res.json();
+      if (!items.length) { el.style.display = 'none'; return; }
+
+      const claimedCount = items.filter(q => q.claimed).length;
+      const readyToClaim = items.filter(q => q.completed && !q.claimed);
+
+      if (claimedCount === items.length) {
+        el.style.display = 'none'; // всё уже забрано на этой неделе — не мозолим глаза
+        return;
+      }
+
+      el.style.display = 'flex';
+      const pct = Math.round((claimedCount / items.length) * 100);
+      document.getElementById('quest-reminder-fill').style.width = `${pct}%`;
+
+      if (readyToClaim.length > 0) {
+        document.getElementById('quest-reminder-text').textContent =
+          `Готово задание «${readyToClaim[0].title}» — заберите награду`;
+      } else {
+        document.getElementById('quest-reminder-text').textContent =
+          `Задания недели: ${claimedCount}/${items.length} выполнено`;
+      }
+    } catch (e) {
+      el.style.display = 'none';
+    }
+  }
+
+  // ---------- Инфо ----------
+  const SUPPORT_USERNAME = "bosstraher";
+
+  function openSupport() {
+    const url = `https://t.me/${SUPPORT_USERNAME}`;
+    tg?.openTelegramLink ? tg.openTelegramLink(url) : (tg?.openLink ? tg.openLink(url) : window.open(url, '_blank'));
+  }
+
+  function toggleFaq(index) {
+    document.querySelectorAll('.faq-item')[index].classList.toggle('open');
+  }
+
+  async function loadInfoScreen() {
+    const termsEl = document.getElementById('info-terms');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/info`, { headers: authHeader() });
+      const info = await res.json();
+
+      document.getElementById('info-about-text').textContent = info.about_text;
+
+      document.getElementById('info-rules-list').innerHTML =
+        info.rules.map(r => `<li>${r}</li>`).join('');
+
+      document.getElementById('info-faq').innerHTML = info.faq.map((item, i) => `
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(${i})">
+            ${item.question}
+            <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-inner">${item.answer}</div></div>
+        </div>
+      `).join('') || '';
+
+      termsEl.innerHTML = `
+        <div class="summary-label">Ваша доля со сделки</div>
+        <div class="summary-value">${(100 - info.admin_cut_percent).toFixed(0)}% от суммы продажи</div>
+        <div class="summary-label">Бонус за приведённого друга (его первая сделка)</div>
+        <div class="summary-value" style="margin-bottom:0">${info.referral_first_deal_percent}% от его выплаты — начисляется вам сверху, не уменьшая его долю</div>
+      `;
+    } catch (e) {
+      termsEl.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Мои заявки ----------
+  const STATUS_LABELS = {
+    pending: "На рассмотрении", waiting: "В ожидании", in_progress: "В обработке",
+    completed: "Выплачено", rejected: "Отклонено",
+  };
+
+  async function loadMyRequests() {
+    const el = document.getElementById('my-requests-list');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/my-requests`, { headers: authHeader() });
+      const items = await res.json();
+      markRequestsAsSeen(items);
+      if (!items.length) {
+        el.innerHTML = emptyState('Пока нет заявок');
+        return;
+      }
+      el.innerHTML = items.map(r => `
+        <div class="list-card" style="cursor:pointer" onclick="openMyRequest(${r.id})">
+          <div class="list-top">
+            <span class="list-title">Сделка #${r.deal_number}</span>
+            <span class="badge ${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
+          </div>
+          <div class="list-meta">
+            ${r.payout_amount ? `Выплачено: ${r.payout_amount.toFixed(2)} TON · ` : ''}${new Date(r.created_at).toLocaleDateString('ru-RU')}
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Детальный просмотр своей заявки ----------
+  let currentMyRequestId = null;
+
+  function openMyRequest(id) {
+    currentMyRequestId = id;
+    showScreen('my-request-detail');
+    loadMyRequestDetail();
+  }
+
+  async function loadMyRequestDetail() {
+    const el = document.getElementById('my-request-detail-content');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/my-requests/${currentMyRequestId}`, { headers: authHeader() });
+      const req = await res.json();
+      renderMyRequestDetail(req);
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  function renderMyRequestDetail(req) {
+    const el = document.getElementById('my-request-detail-content');
+    const linksHtml = req.nft_links.map(u => `• ${u}`).join('<br>') || '—';
+
+    let breakdownHtml = '';
+    if (req.sale_amount !== null) {
+      breakdownHtml = `
+        <div class="summary-card">
+          <div class="summary-label">Сумма сделки</div><div class="summary-value">${req.sale_amount.toFixed(2)} TON</div>
+          ${req.mentor_cut_amount ? `<div class="summary-label">Наставнику</div><div class="summary-value">${req.mentor_cut_amount.toFixed(2)} TON</div>` : ''}
+          <div class="summary-label">${req.status === 'completed' ? 'Выплачено вам' : 'К выплате'}</div>
+          <div class="summary-value">${req.payout_amount.toFixed(2)} TON</div>
+        </div>
+      `;
+    }
+
+    const rejectHtml = (req.status === 'rejected' && req.admin_comment)
+      ? `<div class="error-text" style="display:block">Причина отклонения: ${req.admin_comment}</div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="list-top" style="margin-bottom:14px">
+        <span class="list-title">Сделка #${req.deal_number}</span>
+        <span class="badge ${req.status}">${STATUS_LABELS[req.status] || req.status}</span>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Кошелёк</div><div class="summary-value">${req.wallet_address}</div>
+        <div class="summary-label">NFT-ссылки</div><div class="summary-value summary-links">${linksHtml}</div>
+        <div class="summary-label">Подана</div><div class="summary-value">${new Date(req.created_at).toLocaleString('ru-RU')}</div>
+      </div>
+      ${breakdownHtml}
+      ${rejectHtml}
+      ${req.photos_count > 0 ? '<div class="photo-grid" id="my-request-photo-grid"></div>' : ''}
+    `;
+
+    if (req.photos_count > 0) loadMyRequestPhotos(req.id, req.photos_count);
+  }
+
+  async function loadMyRequestPhotos(requestId, count) {
+    const grid = document.getElementById('my-request-photo-grid');
+    for (let i = 0; i < count; i++) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/my-requests/${requestId}/photo/${i}`, { headers: authHeader() });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const div = document.createElement('div');
+        div.className = 'photo-thumb';
+        div.innerHTML = `<img src="${url}">`;
+        grid.appendChild(div);
+      } catch (e) { /* пропускаем фото, если не загрузилось */ }
+    }
+  }
+
+  // ---------- Профиль ----------
+  async function loadProfile() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me/profile`, { headers: authHeader() });
+      const p = await res.json();
+
+      const name = p.first_name || "Пользователь";
+      document.getElementById('profile-display-name').textContent = `${p.badge ? p.badge + ' ' : ''}${name}`;
+      document.getElementById('profile-avatar-initials').textContent = name.slice(0, 2).toUpperCase();
+
+      const joined = new Date(p.joined_at).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+      document.getElementById('profile-meta').textContent = `${p.level.name} · с нами с ${joined}`;
+      document.getElementById('profile-avatar-ring').style.background =
+        `conic-gradient(var(--gold) 0% ${p.level.progress_percent}%, rgba(255,255,255,0.08) ${p.level.progress_percent}% 100%)`;
+      applyAvatarFrame(document.getElementById('profile-avatar-ring'), p.level.level);
+
+      document.getElementById('profile-balance').textContent = `${p.balance.toFixed(2)} TON`;
+
+      document.getElementById('profile-stats-grid').innerHTML = `
+        <div class="stat-card"><div class="stat-num">${p.deals_completed}</div><div class="stat-label">Сделок</div></div>
+        <div class="stat-card"><div class="stat-num">${p.referrals_count}</div><div class="stat-label">Рефералов</div></div>
+        <div class="stat-card"><div class="stat-num">${p.achievements_count}/${p.achievements_total}</div><div class="stat-label">Достижений</div></div>
+      `;
+
+      document.getElementById('profile-wallet-input').value = p.wallet_address || "";
+    } catch (e) {
+      document.getElementById('profile-display-name').textContent = "Не удалось загрузить";
+    }
+  }
+
+  async function saveProfileWallet() {
+    const wallet = document.getElementById('profile-wallet-input').value.trim();
+    const errorEl = document.getElementById('profile-error');
+
+    if (!isValidTonAddress(wallet)) {
+      errorEl.textContent = 'Похоже, это не настоящий TON-адрес. Проверьте формат.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me/wallet`, {
+        method: 'PATCH',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: wallet }),
+      });
+      if (!res.ok) throw new Error();
+      errorEl.style.display = 'none';
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } catch (e) {
+      errorEl.textContent = 'Не удалось сохранить.';
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ---------- Топ ----------
+  let currentLeaderboardTab = 'balance';
+
+  function openTopScreen() {
+    currentLeaderboardTab = 'balance';
+    document.getElementById('top-tab-balance').classList.add('active');
+    document.getElementById('top-tab-points').classList.remove('active');
+    loadLeaderboard();
+  }
+
+  function switchLeaderboardTab(tab) {
+    currentLeaderboardTab = tab;
+    document.getElementById('top-tab-balance').classList.toggle('active', tab === 'balance');
+    document.getElementById('top-tab-points').classList.toggle('active', tab === 'points');
+    loadLeaderboard();
+  }
+
+  async function loadLeaderboard() {
+    const el = document.getElementById('leaderboard-list');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard?by=${currentLeaderboardTab}`, { headers: authHeader() });
+      const items = await res.json();
+      const medalClasses = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+      el.innerHTML = items.map((u, i) => {
+        const rank = i + 1;
+        const medalClass = medalClasses[rank];
+        const rankHtml = medalClass
+          ? `<span class="leaderboard-medal ${medalClass}">${rank}</span>`
+          : `<span class="leaderboard-rank">${rank}</span>`;
+        return `
+          <div class="leaderboard-row ${medalClass ? 'rank-' + rank : ''}">
+            ${rankHtml}
+            <span class="leaderboard-name">${u.badge ? u.badge + ' ' : ''}${u.name}</span>
+            <span class="leaderboard-points">${currentLeaderboardTab === 'balance' ? u.balance.toFixed(2) + ' TON' : u.points + ' б.'}</span>
+          </div>
+        `;
+      }).join('') || emptyState('Пока никого нет');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Реферал ----------
+  async function loadReferral() {
+    const uid = tg?.initDataUnsafe?.user?.id ?? '000000';
+    document.getElementById('referral-link').textContent = `https://t.me/${BOT_USERNAME}?start=ref_${uid}`;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/info`, { headers: authHeader() });
+      const info = await res.json();
+      document.getElementById('referral-percent-text').textContent = `${info.referral_first_deal_percent}%`;
+      document.getElementById('referral-percent-note').textContent =
+        `Сейчас это ${info.referral_first_deal_percent}% — процент может меняться, актуальное значение всегда показано здесь.`;
+    } catch (e) {
+      document.getElementById('referral-percent-text').textContent = '—';
+    }
+  }
+
+  function copyReferralLink() {
+    const text = document.getElementById('referral-link').textContent;
+    navigator.clipboard?.writeText(text).then(() => {
+      tg?.HapticFeedback?.notificationOccurred('success');
+    }).catch(() => {});
+  }
+
+  // ---------- Настройки (админ) ----------
+  function loadSettingsScreen() {
+    loadAdminStats();
+    loadAdminPercentSettings();
+    loadAdminMentorsList();
+    loadWheelClaimsBadge();
+  }
+
+  async function loadAdminPercentSettings() {
+    const el = document.getElementById('admin-percent-settings');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/settings`, { headers: authHeader() });
+      const s = await res.json();
+      el.innerHTML = `
+        <label>Ваша комиссия с каждой сделки, %</label>
+        <input type="text" id="setting-admin-cut" value="${s.admin_cut_percent}">
+        <label>Бонус рефереру с первой сделки приглашённого, %</label>
+        <input type="text" id="setting-referral-percent" value="${s.referral_first_deal_percent}">
+        <label>Порог «крупной» сделки, TON</label>
+        <input type="text" id="setting-big-deal" value="${s.big_deal_threshold}">
+        <div class="hint-text">Сделки от этой суммы помечаются в очереди — чтобы уделить им больше внимания.</div>
+        <button class="primary-btn" onclick="saveAdminPercentSettings()">Сохранить</button>
+        <div class="error-text" id="settings-error" style="margin-top:10px">Проверьте введённые значения.</div>
+      `;
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function saveAdminPercentSettings() {
+    const adminCut = parseFloat(document.getElementById('setting-admin-cut').value.replace(',', '.'));
+    const refPercent = parseFloat(document.getElementById('setting-referral-percent').value.replace(',', '.'));
+    const bigDeal = parseFloat(document.getElementById('setting-big-deal').value.replace(',', '.'));
+    const errorEl = document.getElementById('settings-error');
+
+    if (isNaN(adminCut) || adminCut < 0 || adminCut > 100 || isNaN(refPercent) || refPercent < 0 || refPercent > 100 || isNaN(bigDeal) || bigDeal < 0) {
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/settings`, {
+        method: 'PATCH',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_cut_percent: adminCut, referral_first_deal_percent: refPercent, big_deal_threshold: bigDeal }),
+      });
+      if (!res.ok) throw new Error();
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } catch (e) {
+      errorEl.style.display = 'block';
+    }
+  }
+
+  async function loadAdminStats() {
+    const el = document.getElementById('admin-stats-grid');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/stats`, { headers: authHeader() });
+      const stats = await res.json();
+      const order = ['pending', 'waiting', 'in_progress', 'completed', 'rejected'];
+      el.innerHTML = order.map(key => `
+        <div class="stat-card">
+          <div class="stat-num">${stats[key] || 0}</div>
+          <div class="stat-label">${STATUS_LABELS[key]}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function loadLevelsTrack() {
+    const el = document.getElementById('levels-track');
+    el.innerHTML = skeletonCards(5);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me/profile`, { headers: authHeader() });
+      const p = await res.json();
+      const currentLevel = p.level.level;
+
+      const perks = {
+        3: '🔒 Рамка аватара со свечением',
+        5: '🔒 Легендарная анимированная рамка + максимальный статус',
+      };
+
+      el.innerHTML = LEVELS_TABLE.map(lv => {
+        const passed = lv.level < currentLevel;
+        const isCurrent = lv.level === currentLevel;
+        const marker = passed ? '✅' : (isCurrent ? '👉' : '🔒');
+        const style = isCurrent
+          ? 'border:1px solid var(--gold)'
+          : (passed ? '' : 'opacity:.5');
+        const perkLine = perks[lv.level]
+          ? `<div class="mentor-terms" style="margin-top:4px">${lv.level <= currentLevel ? perks[lv.level].replace('🔒', '✨') : perks[lv.level]}</div>`
+          : '';
+        return `
+          <div class="mentor-card" style="${style}">
+            <div class="mentor-top">
+              <span class="mentor-name">${marker} Уровень ${lv.level} — ${lv.name}</span>
+            </div>
+            <div class="mentor-terms">От ${lv.min_points} баллов${isCurrent ? ' · вы здесь' : ''}</div>
+            ${perkLine}
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Шеринг достижений ----------
+  let achievementsCache = [];
+
+  function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let curY = y;
+    for (const word of words) {
+      const testLine = line + word + ' ';
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        ctx.fillText(line.trim(), x, curY);
+        line = word + ' ';
+        curY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line.trim(), x, curY);
+    return curY;
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  async function shareAchievement(achievementId) {
+    const ach = achievementsCache.find(a => a.id === achievementId);
+    if (!ach) return;
+
+    try { await document.fonts.load('700 64px "Space Grotesk"'); } catch (e) {}
+
+    const tierColors = { bronze: '#F2A623', silver: '#9AA1AC', gold: '#E3B341', platinum: '#8C7CF0' };
+    const tierLabels = { bronze: 'БРОНЗА', silver: 'СЕРЕБРО', gold: 'ЗОЛОТО', platinum: 'ПЛАТИНА' };
+    const accent = tierColors[ach.tier] || '#E3B341';
+
+    const W = 1080, H = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#0B0E14');
+    grad.addColorStop(1, '#151923');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = accent;
+    ctx.font = '700 28px "Space Grotesk", sans-serif';
+    ctx.fillText('ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО', W / 2, 150);
+
+    ctx.beginPath();
+    ctx.arc(W / 2, 420, 170, 0, Math.PI * 2);
+    ctx.fillStyle = accent + '26';
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = accent;
+    ctx.stroke();
+
+    ctx.font = '190px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(ach.icon, W / 2, 495);
+
+    ctx.fillStyle = '#F2F3F5';
+    ctx.font = '700 60px "Space Grotesk", sans-serif';
+    ctx.fillText(ach.title, W / 2, 700);
+
+    ctx.font = '32px sans-serif';
+    ctx.fillStyle = '#7D8390';
+    wrapCanvasText(ctx, ach.description, W / 2, 760, 800, 42);
+
+    const badgeText = tierLabels[ach.tier] || '';
+    ctx.font = '700 30px "Space Grotesk", sans-serif';
+    const badgeWidth = ctx.measureText(badgeText).width + 64;
+    ctx.fillStyle = accent;
+    roundRectPath(ctx, W / 2 - badgeWidth / 2, 870, badgeWidth, 58, 29);
+    ctx.fill();
+    ctx.fillStyle = '#0B0E14';
+    ctx.fillText(badgeText, W / 2, 908);
+
+    ctx.font = '700 30px "Space Grotesk", sans-serif';
+    ctx.fillStyle = '#E3B341';
+    ctx.fillText(BRAND_NAME.toUpperCase(), W / 2, 990);
+
+    ctx.font = '22px sans-serif';
+    ctx.fillStyle = '#4A5160';
+    ctx.fillText('@' + BOT_USERNAME, W / 2, 1022);
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'achievement.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: ach.title,
+            text: `Достижение получено: «${ach.title}»`,
+          });
+          return;
+        } catch (e) { /* отменил или не поддерживается — используем запасной вариант ниже */ }
+      }
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      tg?.HapticFeedback?.notificationOccurred('success');
+    }, 'image/png');
+  }
+
+  // ---------- Достижения ----------
+  const TIER_LABELS = { bronze: "Бронза", silver: "Серебро", gold: "Золото", platinum: "Платина" };
+
+  // ---------- Достижения / Задания (общий экран "Прогресс") ----------
+  function openProgressScreen() {
+    switchProgressTab('achievements');
+  }
+
+  function switchProgressTab(tab) {
+    document.getElementById('progress-tab-achievements').classList.toggle('active', tab === 'achievements');
+    document.getElementById('progress-tab-quests').classList.toggle('active', tab === 'quests');
+    document.getElementById('achievements-content').style.display = tab === 'achievements' ? 'block' : 'none';
+    document.getElementById('quests-list').style.display = tab === 'quests' ? 'block' : 'none';
+    if (tab === 'achievements') loadAchievements();
+    else loadQuests();
+  }
+
+  async function loadAchievements() {
+    const el = document.getElementById('achievements-content');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/achievements`, { headers: authHeader() });
+      const items = await res.json();
+      achievementsCache = items;
+      const unlockedCount = items.filter(a => a.unlocked).length;
+
+      el.innerHTML = `
+        <div class="achievements-summary">${unlockedCount} / ${items.length} открыто</div>
+        <div class="achievements-grid">
+          ${items.map(a => `
+            <div class="achievement-card tier-${a.tier} ${a.unlocked ? '' : 'locked'}">
+              ${!a.unlocked ? '<div class="achievement-lock-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>' : ''}
+              <div class="achievement-icon">${a.icon}</div>
+              <div class="achievement-title">${a.title}</div>
+              <div class="achievement-desc">${a.description}</div>
+              ${rewardHint(a)}
+              ${a.unlocked
+                ? `<div class="achievement-date">${new Date(a.unlocked_at).toLocaleDateString('ru-RU')}</div>
+                   <button class="small-btn" style="width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="shareAchievement('${a.id}')">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5"/></svg>
+                     Поделиться
+                   </button>`
+                : `<div class="achievement-tier-tag" style="color:var(--hint)">${TIER_LABELS[a.tier]}</div>`}
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const hasRecentUnlock = items.some(a =>
+        a.unlocked && a.unlocked_at && (Date.now() - new Date(a.unlocked_at).getTime()) < 24 * 60 * 60 * 1000
+      );
+      if (hasRecentUnlock) fireConfetti();
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  function rewardHint(a) {
+    if (!a.reward) return '';
+    const parts = [];
+    if (a.reward.commission_discount) parts.push(`−${a.reward.commission_discount}% комиссии`);
+    if (a.reward.priority) parts.push('приоритет в очереди');
+    if (a.reward.parser_access) parts.push('доступ к парсеру подарков');
+    if (parts.length === 0) return '';
+    return `<div class="achievement-tier-tag" style="color:var(--green);margin-top:4px">Награда: ${parts.join(' · ')}</div>`;
+  }
+
+  // ---------- Пользователи ----------
+  let userSearchTimer = null;
+  function debouncedUserSearch() {
+    clearTimeout(userSearchTimer);
+    userSearchTimer = setTimeout(loadAdminUsers, 350);
+  }
+
+  async function loadAdminUsers() {
+    const el = document.getElementById('admin-users-list');
+    const query = document.getElementById('admin-users-search').value.trim();
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users?query=${encodeURIComponent(query)}`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(u => `
+        <div class="list-card">
+          <div class="list-top">
+            <span class="list-title">${u.name}</span>
+            <span class="list-meta">${u.level}</span>
+          </div>
+          <div class="list-meta">id ${u.telegram_id} · выплачено ${u.balance.toFixed(2)} TON</div>
+          ${u.wallet_address ? `<div class="list-meta">Кошелёк: ${u.wallet_address}</div>` : ''}
+        </div>
+      `).join('') : emptyState('Никого не найдено');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Поиск заявки по сделке ----------
+  let requestSearchTimer = null;
+  function debouncedRequestSearch() {
+    clearTimeout(requestSearchTimer);
+    requestSearchTimer = setTimeout(runRequestSearch, 350);
+  }
+
+  async function runRequestSearch() {
+    const query = document.getElementById('admin-search-input').value.trim();
+    const el = document.getElementById('admin-search-results');
+    if (!query) { el.innerHTML = ''; return; }
+    el.innerHTML = skeletonCards(2);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/requests/search-list?query=${encodeURIComponent(query)}`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(r => `
+        <div class="list-card" style="cursor:pointer" onclick="openAdminRequest(${r.id})">
+          <div class="list-top">
+            <span class="list-title">${r.first_name || 'Пользователь'} · #${r.deal_number}</span>
+            <span class="badge ${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
+          </div>
+          <div class="list-meta">${new Date(r.created_at).toLocaleDateString('ru-RU')}</div>
+        </div>
+      `).join('') : emptyState('Ничего не найдено');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Управление админами ----------
+  async function loadAdminsList() {
+    const el = document.getElementById('admins-list');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/admins`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(a => `
+        <div class="mentor-card">
+          <div class="mentor-top">
+            <span class="mentor-name">${a.name} (id ${a.telegram_id})</span>
+            <button class="small-btn danger" onclick="removeAdmin(${a.telegram_id})">Удалить</button>
+          </div>
+          <div class="mentor-terms">Добавлен ${new Date(a.added_at).toLocaleDateString('ru-RU')}</div>
+        </div>
+      `).join('') : emptyState('Пока никого не добавляли — только базовые из .env');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function addAdmin() {
+    const idValue = parseInt(document.getElementById('new-admin-id-input').value.trim(), 10);
+    const errorEl = document.getElementById('add-admin-error');
+    if (isNaN(idValue)) { errorEl.style.display = 'block'; return; }
+    errorEl.style.display = 'none';
+
+    await fetch(`${API_BASE_URL}/api/admin/admins`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegram_id: idValue }),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    document.getElementById('new-admin-id-input').value = '';
+    loadAdminsList();
+  }
+
+  async function removeAdmin(telegramId) {
+    await fetch(`${API_BASE_URL}/api/admin/admins/${telegramId}`, {
+      method: 'DELETE', headers: authHeader(),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadAdminsList();
+  }
+
+  // ---------- Рассылка ----------
+  async function sendBroadcast() {
+    const text = document.getElementById('broadcast-text-input').value.trim();
+    const resultEl = document.getElementById('broadcast-result');
+    if (!text) return;
+
+    const confirmed = tg?.showConfirm
+      ? await new Promise(resolve => tg.showConfirm('Отправить это сообщение всем пользователям?', resolve))
+      : window.confirm('Отправить это сообщение всем пользователям?');
+    if (!confirmed) return;
+
+    resultEl.textContent = 'Отправляем…';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/broadcast`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      resultEl.textContent = `Отправлено ${data.sent} из ${data.total} (не доставлено: ${data.failed})`;
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } catch (e) {
+      resultEl.textContent = 'Не удалось отправить рассылку.';
+    }
+  }
+
+  // ---------- Аналитика ----------
+  async function loadAdminAnalytics() {
+    const el = document.getElementById('admin-analytics-content');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/analytics`, { headers: authHeader() });
+      const a = await res.json();
+
+      const maxVolume = Math.max(...a.daily_series.map(d => d.volume), 1);
+      const barsHtml = a.daily_series.map(d => {
+        const heightPct = Math.max((d.volume / maxVolume) * 100, d.volume > 0 ? 4 : 0);
+        const dayLabel = new Date(d.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'numeric' });
+        return `
+          <div class="bar-chart-col">
+            <div class="bar-chart-bar" style="height:${heightPct}%" title="${d.volume.toFixed(2)} TON"></div>
+            <div class="bar-chart-label">${dayLabel}</div>
+          </div>
+        `;
+      }).join('');
+
+      el.innerHTML = `
+        <div class="stat-grid" style="margin-bottom:14px">
+          <div class="stat-card"><div class="stat-num">${a.total_deals}</div><div class="stat-label">Сделок всего</div></div>
+          <div class="stat-card"><div class="stat-num">${a.total_volume.toFixed(0)} T</div><div class="stat-label">Оборот всего</div></div>
+          <div class="stat-card"><div class="stat-num">${a.total_commission.toFixed(0)} T</div><div class="stat-label">Ваша комиссия</div></div>
+          <div class="stat-card"><div class="stat-num">${a.avg_deal_size.toFixed(1)} T</div><div class="stat-label">Средняя сделка</div></div>
+        </div>
+        <div class="section-label">За 7 дней</div>
+        <div class="stat-grid" style="margin-bottom:14px">
+          <div class="stat-card"><div class="stat-num">${a.week_deals}</div><div class="stat-label">Сделок</div></div>
+          <div class="stat-card"><div class="stat-num">${a.week_volume.toFixed(0)} T</div><div class="stat-label">Оборот</div></div>
+        </div>
+        <div class="section-label">Оборот по дням (14 дней)</div>
+        <div class="bar-chart">${barsHtml}</div>
+        <div class="hint-text" style="text-align:center;margin-top:14px">На рассмотрении сейчас: ${a.pending_count}</div>
+      `;
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function exportCsv() {
+    const btn = document.getElementById('export-csv-btn');
+    const resultEl = document.getElementById('export-result');
+    const status = document.getElementById('export-status-select').value || null;
+    const dateFrom = document.getElementById('export-date-from').value || null;
+    const dateTo = document.getElementById('export-date-to').value || null;
+
+    btn.disabled = true;
+    resultEl.textContent = 'Отправляем…';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/export-csv`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, date_from: dateFrom, date_to: dateTo }),
+      });
+      if (!res.ok) throw new Error();
+      tg?.HapticFeedback?.notificationOccurred('success');
+      resultEl.textContent = 'Файл отправлен вам в чат.';
+    } catch (e) {
+      resultEl.textContent = 'Не удалось отправить файл.';
+    }
+    btn.disabled = false;
+  }
+
+  // ---------- Журнал действий ----------
+  async function loadAdminLog() {
+    const el = document.getElementById('admin-log-list');
+    el.innerHTML = skeletonCards(4);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/log`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(l => `
+        <div class="log-entry">
+          <div class="log-entry-top">
+            <span>${l.action}</span>
+            <span class="log-entry-meta">${new Date(l.created_at).toLocaleString('ru-RU')}</span>
+          </div>
+          <div class="log-entry-meta">${l.admin_name} (id ${l.admin_telegram_id})${l.details ? ' · ' + l.details : ''}</div>
+        </div>
+      `).join('') : emptyState('Журнал пока пуст');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  // ---------- Инфо и FAQ (управление) ----------
+  async function loadAdminFaqScreen() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/info`, { headers: authHeader() });
+      const info = await res.json();
+      document.getElementById('info-about-input').value = info.about_text;
+      document.getElementById('info-rules-input').value = info.rules.join('\n');
+      renderFaqList(info.faq);
+    } catch (e) {}
+  }
+
+  function renderFaqList(items) {
+    const el = document.getElementById('admin-faq-list');
+    el.innerHTML = items.length ? items.map(item => `
+      <div class="mentor-card">
+        <div class="mentor-top">
+          <span class="mentor-name">${item.question}</span>
+          <button class="small-btn danger" onclick="deleteFaqItem(${item.id})">Удалить</button>
+        </div>
+        <div class="mentor-terms">${item.answer}</div>
+      </div>
+    `).join('') : emptyState('Вопросов пока нет');
+  }
+
+  async function saveInfoContent() {
+    const resultEl = document.getElementById('info-save-result');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/info`, {
+        method: 'PATCH',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          about_text: document.getElementById('info-about-input').value,
+          rules_text: document.getElementById('info-rules-input').value,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      tg?.HapticFeedback?.notificationOccurred('success');
+      resultEl.textContent = 'Сохранено.';
+    } catch (e) {
+      resultEl.textContent = 'Не удалось сохранить.';
+    }
+    setTimeout(() => { resultEl.textContent = ''; }, 2000);
+  }
+
+  async function addFaqItem() {
+    const question = document.getElementById('new-faq-question').value.trim();
+    const answer = document.getElementById('new-faq-answer').value.trim();
+    if (!question || !answer) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/faq`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, answer }),
+      });
+      if (!res.ok) return;
+      document.getElementById('new-faq-question').value = '';
+      document.getElementById('new-faq-answer').value = '';
+      tg?.HapticFeedback?.notificationOccurred('success');
+      loadAdminFaqScreen();
+    } catch (e) {}
+  }
+
+  async function deleteFaqItem(id) {
+    await fetch(`${API_BASE_URL}/api/admin/faq/${id}`, { method: 'DELETE', headers: authHeader() });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadAdminFaqScreen();
+  }
+
+  // ---------- Призы колеса на выплату (админ) ----------
+  async function loadAdminWheelClaims() {
+    const el = document.getElementById('admin-wheel-claims-list');
+    el.innerHTML = skeletonCards(2);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/wheel-claims`, { headers: authHeader() });
+      const items = await res.json();
+      el.innerHTML = items.length ? items.map(c => `
+        <div class="mentor-card">
+          <div class="mentor-top">
+            <span class="mentor-name">${c.first_name || 'Пользователь'} (id ${c.telegram_id})</span>
+            <span class="mentor-terms" style="margin:0;color:var(--gold);font-weight:700">${c.amount_ton.toFixed(2)} TON</span>
+          </div>
+          <div class="mentor-terms">Кошелёк: ${c.wallet_address}</div>
+          <div class="mentor-terms">${new Date(c.created_at).toLocaleString('ru-RU')}</div>
+          <button class="small-btn" style="width:100%;margin-top:8px" onclick="completeWheelClaim(${c.id})">Отправлено — подтвердить</button>
+        </div>
+      `).join('') : emptyState('Пока нет призов к отправке');
+      loadWheelClaimsBadge();
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function completeWheelClaim(claimId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/wheel-claims/${claimId}/complete`, {
+        method: 'POST', headers: authHeader(),
+      });
+      if (!res.ok) return;
+      tg?.HapticFeedback?.notificationOccurred('success');
+      loadAdminWheelClaims();
+    } catch (e) {}
+  }
+
+  async function loadWheelClaimsBadge() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/wheel-claims/count`, { headers: authHeader() });
+      const data = await res.json();
+      const badge = document.getElementById('wheel-claims-badge');
+      if (data.count > 0) {
+        badge.textContent = data.count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
+  // ---------- Наставники: управление (админ) ----------
+  async function loadAdminMentorsList() {
+    const el = document.getElementById('admin-mentors-list');
+    if (!el) return;
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/mentors`, { headers: authHeader() });
+      const items = await res.json();
+      if (!items.length) { el.innerHTML = emptyState('Наставников пока нет'); return; }
+      el.innerHTML = items.map(m => `
+        <div class="mentor-card">
+          <div class="mentor-top">
+            <span class="mentor-name">${m.name}${m.is_active ? '' : ' (удалён)'}</span>
+            ${m.is_active ? `<button class="small-btn danger" onclick="removeMentor(${m.id})">Удалить</button>` : ''}
+          </div>
+          <div class="mentor-terms">${m.percent}% · на ${m.deals_limit} сделок</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function removeMentor(mentorId) {
+    await fetch(`${API_BASE_URL}/api/admin/mentors/${mentorId}/remove`, {
+      method: 'POST', headers: authHeader(),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadAdminMentorsList();
+  }
+
+  // ---------- Наставники: экран ученика ----------
+  async function loadMentorsScreen() {
+    const el = document.getElementById('mentors-content');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me/mentor`, { headers: authHeader() });
+      const myMentor = await res.json();
+
+      if (myMentor) {
+        const pct = Math.round((myMentor.deals_used / myMentor.deals_total) * 100);
+        el.innerHTML = `
+          <div class="mentor-card">
+            <div class="mentor-top"><span class="mentor-name">${myMentor.mentor_name}</span></div>
+            <div class="mentor-terms">Берёт ${myMentor.percent_cut}% с ваших сделок</div>
+            <div class="hint-text" style="margin-bottom:0">Сделок использовано: ${myMentor.deals_used} из ${myMentor.deals_total}</div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="hint-text">Когда лимит закончится, ваши сделки будут идти на обычных условиях (без вычета за наставника). Все выплаты — в TON.</div>
+        `;
+        return;
+      }
+
+      renderMentorTabs('choose');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  async function renderMentorTabs(activeTab) {
+    const el = document.getElementById('mentors-content');
+    el.innerHTML = `
+      <div class="tab-switch">
+        <button class="tab-btn ${activeTab === 'choose' ? 'active' : ''}" onclick="renderMentorTabs('choose')">Выбрать наставника</button>
+        <button class="tab-btn ${activeTab === 'apply' ? 'active' : ''}" onclick="renderMentorTabs('apply')">Стать наставником</button>
+      </div>
+      <div id="mentor-tab-content"></div>
+    `;
+
+    if (activeTab === 'choose') {
+      const content = document.getElementById('mentor-tab-content');
+      content.innerHTML = skeletonCards(3);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/mentors`, { headers: authHeader() });
+        const items = await res.json();
+        content.innerHTML = items.length ? items.map(m => `
+          <div class="mentor-card">
+            <div class="mentor-top">
+              <span class="mentor-name">${m.badge ? m.badge + ' ' : ''}${m.name}</span>
+              <button class="small-btn" onclick="pickMentor(${m.id})">Выбрать</button>
+            </div>
+            <div class="mentor-terms">${m.percent}% с ваших сделок · на ${m.deals_limit} сделок</div>
+          </div>
+        `).join('') : emptyState('Пока нет доступных наставников');
+      } catch (e) {
+        content.innerHTML = emptyState('Не удалось загрузить');
+      }
+    } else {
+      document.getElementById('mentor-tab-content').innerHTML = `
+        <label>Ваш процент с учеников</label>
+        <input type="text" id="mentor-percent-input" placeholder="Например: 20">
+        <label>На сколько сделок действует помощь</label>
+        <input type="text" id="mentor-deals-input" placeholder="Например: 10">
+        <div class="hint-text">Заявка уйдёт на рассмотрение админу.</div>
+        <button class="primary-btn" onclick="submitMentorApplication()">Отправить заявку</button>
+        <div class="error-text" id="mentor-apply-error" style="margin-top:10px">Проверьте введённые значения.</div>
+      `;
+    }
+  }
+
+  async function pickMentor(mentorId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/mentors/${mentorId}/choose`, {
+        method: 'POST', headers: authHeader(),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        tg?.showAlert ? tg.showAlert(err.detail || 'Не получилось выбрать наставника') : alert(err.detail);
+        return;
+      }
+      tg?.HapticFeedback?.notificationOccurred('success');
+      loadMentorsScreen();
+    } catch (e) {}
+  }
+
+  async function submitMentorApplication() {
+    const percent = parseFloat(document.getElementById('mentor-percent-input').value.replace(',', '.').trim());
+    const deals = parseInt(document.getElementById('mentor-deals-input').value.trim(), 10);
+    const errorEl = document.getElementById('mentor-apply-error');
+
+    if (isNaN(percent) || percent <= 0 || percent > 100 || isNaN(deals) || deals < 1) {
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/mentor-applications`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ percent, deals_limit: deals }),
+      });
+      if (!res.ok) throw new Error();
+      tg?.HapticFeedback?.notificationOccurred('success');
+      document.getElementById('mentor-tab-content').innerHTML =
+        '<div class="empty-state">Заявка отправлена, ждите решения админа.</div>';
+    } catch (e) {
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ---------- Степпер заявки на выплату ----------
+  const payoutState = { step: 0, savedWallet: null, walletEditing: false, walletAddress: "", dealNumber: "", nftLinks: [""], photos: [] };
+
+  function resetPayoutWizard() {
+    payoutState.step = 0; payoutState.walletEditing = false; payoutState.walletAddress = "";
+    payoutState.dealNumber = ""; payoutState.nftLinks = [""]; payoutState.photos = [];
+    document.getElementById('wallet-input').value = "";
+    document.getElementById('deal-input').value = "";
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('submit-btn').textContent = "Отправить заявку";
+    renderNftRows();
+    renderPhotoGrid();
+    showPayoutStep(0);
+    loadSavedWallet();
+  }
+
+  function showPayoutStep(step) {
+    document.querySelectorAll('#screen-payout .panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`#screen-payout .panel[data-panel="${step}"]`).classList.add('active');
+    document.querySelectorAll('#screen-payout .dot').forEach(d => {
+      const n = Number(d.dataset.step);
+      d.classList.toggle('active', n === step);
+      d.classList.toggle('done', n < step);
+    });
+    const titles = ["Кошелёк", "Номер сделки", "NFT-ссылки", "Фото", "Проверка"];
+    document.getElementById('payout-step-title').textContent = titles[step] ?? "Готово";
+    payoutState.step = step;
+  }
+
+  async function loadSavedWallet() {
+    if (!tg?.initData) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/me`, { headers: authHeader() });
+      const me = await res.json();
+      if (me.wallet_address) {
+        payoutState.savedWallet = me.wallet_address;
+        document.getElementById('saved-wallet-text').textContent = me.wallet_address;
+        document.getElementById('wallet-saved-block').style.display = 'block';
+        document.getElementById('wallet-input-block').style.display = 'none';
+      } else {
+        document.getElementById('wallet-saved-block').style.display = 'none';
+        document.getElementById('wallet-input-block').style.display = 'block';
+      }
+    } catch (e) {}
+  }
+
+  function editWallet() {
+    payoutState.walletEditing = true;
+    document.getElementById('wallet-saved-block').style.display = 'none';
+    document.getElementById('wallet-input-block').style.display = 'block';
+  }
+
+  function isValidTonAddress(address) {
+    const a = address.trim();
+    return /^[A-Za-z0-9_-]{48}$/.test(a) || /^-?\d+:[0-9a-fA-F]{64}$/.test(a);
+  }
+
+  function nextFromWallet() {
+    let wallet;
+    if (payoutState.savedWallet && !payoutState.walletEditing) {
+      wallet = payoutState.savedWallet;
+    } else {
+      wallet = document.getElementById('wallet-input').value.trim();
+    }
+
+    const errorEl = document.getElementById('wallet-error');
+    if (!isValidTonAddress(wallet)) {
+      errorEl.textContent = 'Похоже, это не настоящий TON-адрес. Проверьте формат.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+    payoutState.walletAddress = wallet;
+    showPayoutStep(1);
+  }
+
+  function nextFromDeal() {
+    const deal = document.getElementById('deal-input').value.trim();
+    const errorEl = document.getElementById('deal-error');
+    if (!deal) { errorEl.style.display = 'block'; return; }
+    errorEl.style.display = 'none';
+    payoutState.dealNumber = deal;
+    showPayoutStep(2);
+  }
+
+  function renderNftRows() {
+    const container = document.getElementById('nft-links-container');
+    container.innerHTML = '';
+    payoutState.nftLinks.forEach((val, i) => {
+      const row = document.createElement('div');
+      row.className = 'nft-row';
+      row.innerHTML = `
+        <input type="text" placeholder="https://..." value="${val.replace(/"/g, '&quot;')}"
+               oninput="payoutState.nftLinks[${i}] = this.value">
+        ${payoutState.nftLinks.length > 1 ? `<button class="remove-btn" onclick="removeNftRow(${i})">×</button>` : ''}
+      `;
+      container.appendChild(row);
+    });
+  }
+  function addNftRow() { payoutState.nftLinks.push(""); renderNftRows(); }
+  function removeNftRow(i) { payoutState.nftLinks.splice(i, 1); renderNftRows(); }
+
+  function nextFromLinks() {
+    const links = payoutState.nftLinks.map(l => l.trim()).filter(Boolean);
+    const errorEl = document.getElementById('nft-error');
+    if (links.length === 0) { errorEl.style.display = 'block'; return; }
+    errorEl.style.display = 'none';
+    payoutState.nftLinks = links;
+    showPayoutStep(3);
+  }
+
+  // ---------- Фото подтверждения ----------
+  function resizeImageFile(file, maxDim = 1280, quality = 0.72) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+            else { width = Math.round(width * maxDim / height); height = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handlePhotoSelect(event) {
+    const files = Array.from(event.target.files || []);
+    const remaining = 10 - payoutState.photos.length;
+    const toAdd = files.slice(0, remaining);
+
+    for (const file of toAdd) {
+      try {
+        const dataUrl = await resizeImageFile(file);
+        payoutState.photos.push(dataUrl);
+      } catch (e) { /* пропускаем файл, если не получилось обработать */ }
+    }
+
+    event.target.value = '';
+    renderPhotoGrid();
+  }
+
+  function renderPhotoGrid() {
+    const grid = document.getElementById('photo-preview-grid');
+    grid.innerHTML = payoutState.photos.map((url, i) => `
+      <div class="photo-thumb">
+        <img src="${url}">
+        <button class="remove-photo-btn" onclick="removePhoto(${i})">×</button>
+      </div>
+    `).join('');
+
+    const btn = document.getElementById('add-photo-btn');
+    const cameraIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>';
+    const count = payoutState.photos.length;
+    if (count === 0) {
+      btn.innerHTML = cameraIcon + 'Прикрепить фото';
+      btn.disabled = false;
+    } else if (count >= 10) {
+      btn.textContent = '10/10 — лимит достигнут';
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = cameraIcon + `Добавить ещё (${count}/10)`;
+      btn.disabled = false;
+    }
+  }
+
+  function removePhoto(i) {
+    payoutState.photos.splice(i, 1);
+    renderPhotoGrid();
+  }
+
+  function nextFromPhotos() {
+    const errorEl = document.getElementById('photo-error');
+    if (payoutState.photos.length === 0) { errorEl.style.display = 'block'; return; }
+    errorEl.style.display = 'none';
+
+    document.getElementById('summary-wallet').textContent = payoutState.walletAddress;
+    document.getElementById('summary-deal').textContent = payoutState.dealNumber;
+    document.getElementById('summary-links').innerHTML = payoutState.nftLinks.map(l => `• ${l}`).join('<br>');
+    document.getElementById('summary-photos').textContent = `${payoutState.photos.length} шт.`;
+
+    showPayoutStep(4);
+  }
+
+  async function submitRequest() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = "Отправляем…";
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet_address: payoutState.walletAddress,
+          deal_number: payoutState.dealNumber,
+          nft_links: payoutState.nftLinks,
+          photos: payoutState.photos,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Ошибка отправки');
+      }
+
+      tg?.HapticFeedback?.notificationOccurred('success');
+      document.getElementById('status-icon').textContent = "✅";
+      document.getElementById('status-title').textContent = "Заявка отправлена";
+      document.getElementById('status-text').textContent = "Мы уведомим вас, как только её рассмотрят.";
+      showPayoutStep(5);
+    } catch (e) {
+      tg?.HapticFeedback?.notificationOccurred('error');
+      btn.disabled = false; btn.textContent = "Отправить заявку";
+      document.getElementById('status-icon').textContent = "⚠️";
+      document.getElementById('status-title').textContent = "Не получилось отправить";
+      document.getElementById('status-text').textContent = e.message || "Проверьте соединение и попробуйте снова.";
+      showPayoutStep(5);
+    }
+  }
+
+  async function loadQueueBadge() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/stats`, { headers: authHeader() });
+      const stats = await res.json();
+      const count = (stats.pending || 0) + (stats.waiting || 0) + (stats.in_progress || 0);
+      const badge = document.getElementById('queue-badge');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (e) { /* бейдж просто не покажется */ }
+  }
+
+  // ---------- Очередь заявок (админ) ----------
+  let currentAdminRequestId = null;
+
+  let currentQueueFilter = 'pending,waiting,in_progress';
+
+  function switchQueueFilter(filter, btn) {
+    currentQueueFilter = filter;
+    document.querySelectorAll('.queue-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadAdminQueue();
+  }
+
+  async function loadAdminQueue() {
+    const el = document.getElementById('admin-queue-list');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/requests?status=${currentQueueFilter}`, { headers: authHeader() });
+      const items = await res.json();
+      if (!items.length) { el.innerHTML = emptyState('Ничего не найдено'); return; }
+      el.innerHTML = items.map(r => `
+        <div class="list-card ${r.is_stale ? 'stale' : ''}" style="cursor:pointer" onclick="openAdminRequest(${r.id})">
+          <div class="list-top">
+            <span class="list-title">${r.is_priority ? '⭐ ' : ''}${r.first_name || 'Пользователь'} · #${r.deal_number}</span>
+            <span class="badge ${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
+          </div>
+          <div class="list-meta">
+            ${new Date(r.created_at).toLocaleDateString('ru-RU')}
+            ${r.is_stale ? '<span class="tag-stale">просрочено</span>' : ''}
+            ${r.is_big_deal ? '<span class="tag-big">крупная</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  function openAdminRequest(id) {
+    currentAdminRequestId = id;
+    showScreen('admin-request-detail');
+    loadAdminRequestDetail();
+  }
+
+  async function loadAdminRequestDetail() {
+    const el = document.getElementById('admin-request-detail-content');
+    el.innerHTML = skeletonCards(3);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/requests/${currentAdminRequestId}`, { headers: authHeader() });
+      const req = await res.json();
+      renderAdminRequestDetail(req);
+    } catch (e) {
+      el.innerHTML = emptyState('Не удалось загрузить');
+    }
+  }
+
+  function renderAdminRequestDetail(req) {
+    const el = document.getElementById('admin-request-detail-content');
+    const linksHtml = req.nft_links.map(u => `• ${u}`).join('<br>') || '—';
+
+    let actionsHtml = '';
+    if (req.status === 'pending' || req.status === 'waiting') {
+      actionsHtml = `
+        <button class="primary-btn" onclick="showAdminAmountInput()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><path d="M20 6 9 17l-5-5"/></svg>Принять</button>
+        <button class="secondary-btn" onclick="showAdminRejectInput()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><path d="M18 6 6 18M6 6l12 12"/></svg>Отклонить</button>
+        ${req.status === 'pending' ? '<button class="secondary-btn" onclick="adminWait()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>В ожидание</button>' : ''}
+      `;
+    } else if (req.status === 'in_progress') {
+      const pct = req.sale_amount > 0 ? Math.round((req.admin_cut_amount / req.sale_amount) * 100) : 30;
+      actionsHtml = `
+        ${req.is_big_deal ? '<div class="big-deal-warning">Крупная сумма — сверьте данные перед подтверждением</div>' : ''}
+        <div class="summary-card">
+          <div class="summary-label">Сумма сделки</div><div class="summary-value">${req.sale_amount.toFixed(2)} TON</div>
+          <div class="summary-label">Ваша комиссия (${pct}%)</div><div class="summary-value">${req.admin_cut_amount.toFixed(2)} TON</div>
+          <div class="summary-label">К выплате</div><div class="summary-value">${req.payout_amount.toFixed(2)} TON</div>
+        </div>
+        <button class="primary-btn" onclick="adminComplete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><path d="M20 6 9 17l-5-5"/></svg>Успешно завершить</button>
+        <button class="secondary-btn" onclick="showAdminAmountInput()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Исправить сумму</button>
+      `;
+    } else {
+      actionsHtml = `<div class="hint-text">Заявка уже обработана: ${STATUS_LABELS[req.status] || req.status}</div>`;
+    }
+
+    el.innerHTML = `
+      <div class="summary-card">
+        <div class="summary-label">Пользователь</div><div class="summary-value">${req.first_name || '—'} (id ${req.telegram_id})</div>
+        <div class="summary-label">Кошелёк</div><div class="summary-value">${req.wallet_address}</div>
+        <div class="summary-label">Номер сделки</div><div class="summary-value">${req.deal_number}</div>
+        <div class="summary-label">NFT-ссылки</div><div class="summary-value summary-links">${linksHtml}</div>
+      </div>
+      ${req.photos_count > 0 ? `<div class="photo-grid" id="admin-photo-grid"></div>` : ''}
+      <div id="admin-amount-block" style="display:none">
+        <label>Сумма, на которую продали</label>
+        <input type="text" id="admin-amount-value" placeholder="Например: 500">
+        <button class="primary-btn" onclick="submitAdminAmount()">Подтвердить</button>
+      </div>
+      <div id="admin-reject-block" style="display:none">
+        <label>Причина отклонения</label>
+        <input type="text" id="admin-reject-value" placeholder="Необязательно">
+        <button class="primary-btn" onclick="submitAdminReject()">Отклонить заявку</button>
+      </div>
+      <div id="admin-default-actions">${actionsHtml}</div>
+    `;
+
+    if (req.photos_count > 0) loadAdminRequestPhotos(req.id, req.photos_count);
+  }
+
+  async function loadAdminRequestPhotos(requestId, count) {
+    const grid = document.getElementById('admin-photo-grid');
+    for (let i = 0; i < count; i++) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/requests/${requestId}/photo/${i}`, { headers: authHeader() });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const div = document.createElement('div');
+        div.className = 'photo-thumb';
+        div.innerHTML = `<img src="${url}">`;
+        grid.appendChild(div);
+      } catch (e) { /* пропускаем фото, если не загрузилось */ }
+    }
+  }
+
+  function showAdminAmountInput() {
+    document.getElementById('admin-amount-block').style.display = 'block';
+    document.getElementById('admin-reject-block').style.display = 'none';
+    document.getElementById('admin-default-actions').style.display = 'none';
+  }
+
+  function showAdminRejectInput() {
+    document.getElementById('admin-reject-block').style.display = 'block';
+    document.getElementById('admin-amount-block').style.display = 'none';
+    document.getElementById('admin-default-actions').style.display = 'none';
+  }
+
+  async function submitAdminAmount() {
+    const raw = document.getElementById('admin-amount-value').value.replace(',', '.').trim();
+    const amount = parseFloat(raw);
+    if (isNaN(amount) || amount <= 0) return;
+
+    await fetch(`${API_BASE_URL}/api/admin/requests/${currentAdminRequestId}/accept`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sale_amount: amount }),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadAdminRequestDetail();
+  }
+
+  async function submitAdminReject() {
+    const comment = document.getElementById('admin-reject-value').value.trim();
+    await fetch(`${API_BASE_URL}/api/admin/requests/${currentAdminRequestId}/reject`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment }),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadQueueBadge();
+    showScreen('admin-queue');
+  }
+
+  async function adminWait() {
+    await fetch(`${API_BASE_URL}/api/admin/requests/${currentAdminRequestId}/wait`, {
+      method: 'POST', headers: authHeader(),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadQueueBadge();
+    showScreen('admin-queue');
+  }
+
+  async function adminComplete() {
+    await fetch(`${API_BASE_URL}/api/admin/requests/${currentAdminRequestId}/complete`, {
+      method: 'POST', headers: authHeader(),
+    });
+    tg?.HapticFeedback?.notificationOccurred('success');
+    loadQueueBadge();
+    showScreen('admin-queue');
+  }
+
+  loadHome();
+</script>
+</body>
+</html>
