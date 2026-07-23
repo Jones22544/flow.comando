@@ -1075,8 +1075,19 @@
   // ---------- Главный экран: баланс, уровень, права админа ----------
   async function loadHome() {
     if (!tg?.initData) {
+      // ВРЕМЕННАЯ ДИАГНОСТИКА — покажет точную причину, потом уберём
+      let reason;
+      if (typeof window.Telegram === 'undefined') {
+        reason = "Скрипт telegram-web-app.js не загрузился";
+      } else if (!window.Telegram.WebApp) {
+        reason = "window.Telegram есть, но WebApp — нет";
+      } else if (!window.Telegram.WebApp.initData) {
+        reason = `initData пустой (длина: ${(window.Telegram.WebApp.initData || '').length}), версия клиента: ${window.Telegram.WebApp.version || '?'}, платформа: ${window.Telegram.WebApp.platform || '?'}`;
+      } else {
+        reason = "Неизвестная причина";
+      }
       document.getElementById('user-name').textContent = "Тестовый пользователь";
-      document.getElementById('user-level').textContent = "Откройте через Telegram";
+      document.getElementById('user-level').textContent = reason;
       return;
     }
     try {
